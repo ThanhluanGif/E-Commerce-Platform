@@ -1,31 +1,67 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import {useEffect, useState} from 'react'
 
-// Dữ liệu mẫu (Mock data) phục vụ dựng giao diện trước khi kết nối API từ Spring Boot
-const mockProducts = [
-    { id: 1, name: "iPhone 15 Pro Max", price: "30.000.000 đ" },
-    { id: 2, name: "MacBook Pro M3", price: "45.000.000 đ" },
-    { id: 3, name: "Samsung S24 Ultra", price: "27.000.000 đ" }
-];
 
 function ProductList() {
+
+    // 1. Tạo một State để lưu trữ danh sách sản phẩm từ Backend đổ về (ban đầu là mảng rỗng)
+    const [products, setProducts] = useState([]);
+
+    // State để lưu trạng thái đang tải dữ liệu hoặc lỗi nếu có
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // 2. useEffect dùng để tự động chạy đoạn code gọi API ngay khi giao diện trang web vừa nạp xong
+    useEffect(() => {
+        // Hàm gọi API sang Backend Spring Boot
+        fetch('http://localhost:8080/api/products') // Đường dẫn API của bạn bên Spring Boot
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Không thể kết nối đến Backend hoặc API bị lỗi!');
+                }
+                return response.json(); // Chuyển đổi dữ liệu nhận được từ dạng chuỗi sang JSON
+            })
+            .then((data) => {
+                setProducts(data); // Nạp dữ liệu thật vào State 'products'
+                setLoading(false); // Tắt trạng thái đang tải
+            })
+            .catch((err) => {
+                setError(err.message); // Lưu lại thông báo lỗi nếu Backend chưa bật hoặc lỗi API
+                setLoading(false);
+            });
+    }, []); // Mảng rỗng [] ở đây nghĩa là chỉ chạy duy nhất 1 lần khi mở trang lên
+
+    // 3. Xử lý hiển thị các trạng thái giao diện thô
+    if (loading) return <div style={{ padding: '20px' }}>⏳ Đang tải dữ liệu từ Backend Spring Boot...</div>;
+    if (error) return <div style={{ padding: '20px', color: 'red' }}>❌ Thông báo lỗi: {error}</div>;
+
+
     return (
-        <div style={{ padding: '20px' }}>
-            <h2 style={{ marginBottom: '20px' }}>Danh sách sản phẩm</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                {mockProducts.map(p => (
-                    <div key={p.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
-                        <div style={{ width: '100%', height: '150px', background: '#f5f5f5', marginBottom: '10px', borderRadius: '5px' }}></div>
-                        <h3>{p.name}</h3>
-                        <p style={{ color: 'red', fontWeight: 'bold' }}>{p.price}</p>
-                        <Link to={`/products/${p.id}`}>
-                            <button style={{ background: '#2c3e50', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' }}>
-                                Xem chi tiết
-                            </button>
-                        </Link>
-                    </div>
-                ))}
-            </div>
+        <div style={{ padding: '20px', border: '2px dashed green' }}>
+            <p style={{ color: 'green', margin: 0 }}>[Trang danh sách sản phẩm - Dữ liệu động thực tế]</p>
+
+            <h2>DANH SÁCH SẢN PHẨM TỪ DATABASE</h2>
+
+            {/* Nếu mảng rỗng (chưa có sản phẩm nào dưới DB) */}
+            {products.length === 0 ? (
+                <p>Hiện tại không có sản phẩm nào trong cơ sở dữ liệu.</p>
+            ) : (
+                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px' }}>
+                    {/* Vòng lặp map dữ liệu thật từ Backend */}
+                    {products.map((product) => (
+                        <div key={product.id} style={{ border: '1px solid #000', padding: '15px', width: '220px' }}>
+                            {/* Lưu ý: Các trường như .name, .price phải trùng khớp với thuộc tính trong Entity Java của bạn */}
+                            <h4>{product.name}</h4>
+                            <p>Giá: {product.price.toLocaleString()} đ</p>
+
+                            <Link to={`/products/${product.id}`}>
+                                <button style={{ cursor: 'pointer' }}>Xem chi tiết</button>
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
