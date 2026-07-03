@@ -1,10 +1,12 @@
 package com.ecommerce.ecommerceapi.entity;
 
-import  lombok.*;
+import lombok.*;
 import jakarta.persistence.*;
-
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
-
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +22,10 @@ public class Product {
 
     @Column(nullable = false, length = 255)
     private String name;
+
+    @Column(nullable = false, length = 255, unique = true)
+    private String slug;
+
     @Column(columnDefinition = "TEXT" )
     private String description;
 
@@ -36,4 +43,18 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false) // Tự động ánh xạ cột category_id dưới database
     private Category category;
+
+    @Column(name = "sale_price", precision = 10, scale = 2)
+    private BigDecimal salePrice;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images;
 }

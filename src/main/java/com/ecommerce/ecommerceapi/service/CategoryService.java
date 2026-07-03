@@ -16,10 +16,15 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
 
+    // Lấy cây thư mục (danh mục gốc và các con của nó)
+    public List<Category> getCategoryTree() {
+        return categoryRepository.findByParentIsNull();
+    }
+
     // Lấy danh mục theo ID
     public Category getCategoryById(Integer id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục với id: " + id));
+                .orElseThrow(() -> new com.ecommerce.ecommerceapi.exception.ResourceNotFoundException("Không tìm thấy danh mục với id: " + id));
     }
 
     // Thêm mới hoặc Cập nhật danh mục

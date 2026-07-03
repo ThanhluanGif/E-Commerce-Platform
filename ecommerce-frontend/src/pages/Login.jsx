@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 
+
 function Login() {
     // 1. Khai báo state để quản lý dữ liệu ô nhập (Form Input)
     const [username, setUsername] = useState('');
@@ -33,10 +34,21 @@ function Login() {
                 return res.json();
             })
             .then((data) => {
-                if (data.token) {
-                    localStorage.setItem('jwtToken', data.token);
-                    setMessage('Đăng nhập thành công!');
-                    setTimeout(() => navigate('/'), 1000);
+                const loginRes = (data && data.success) ? data.data : data;
+                if (loginRes && loginRes.token) {
+                    localStorage.setItem('jwtToken', loginRes.token);
+                    if (loginRes.user) {
+                        localStorage.setItem('userId', loginRes.user.id);
+                        localStorage.setItem('username', loginRes.user.username);
+                        localStorage.setItem('userRole', loginRes.user.role);
+                    }
+                    setMessage('✅ Đăng nhập thành công!');
+                    setTimeout(() => {
+                        window.dispatchEvent(new Event('storage')); // Notify components of storage change
+                        navigate('/');
+                    }, 1000);
+                } else {
+                    throw new Error(data.message || 'Đăng nhập thất bại.');
                 }
             })
             .catch((err) => {
@@ -47,20 +59,6 @@ function Login() {
     return (
         <> {/* Thẻ bọc ngoài cùng bắt buộc của React */}
             <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '450px', margin: '40px auto', padding: '20px', color: '#1a1a1a' }}>
-
-                {/* Nút Quay lại phía trên góc trái */}
-                <div style={{ marginBottom: '20px' }}>
-                    <Link to="/" style={{ textDecoration: 'none', color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
-                        🏠 Quay lại
-                    </Link>
-                </div>
-
-                {/* Logo Thương hiệu */}
-                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h1 style={{ color: '#3643ba', fontStyle: 'italic', letterSpacing: '1px', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
-                        TECHSTORE
-                    </h1>
-                </div>
 
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Đăng nhập</h2>
 
@@ -243,8 +241,8 @@ function Login() {
                                     gap: '15px'
                                 }}
                             >
-                                <img src="https://flagcdn.com/w20/vn.png" alt="VN" style={{ width: '24px' }} />
-                                <span style={{ fontSize: '15px', fontWeight: '400' }}>Vietnam (English)</span>
+                                <img src="https://flagcdn.com/w20/us.png" alt="US" style={{ width: '24px' }} />
+                                <span style={{ fontSize: '15px', fontWeight: '400' }}>United States (English)</span>
                             </div>
                         </div>
                     </div>

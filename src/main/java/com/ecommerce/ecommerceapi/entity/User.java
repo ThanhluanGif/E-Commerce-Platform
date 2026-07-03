@@ -2,6 +2,10 @@ package com.ecommerce.ecommerceapi.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -9,8 +13,7 @@ import jakarta.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-
-
+@EntityListeners(AuditingEntityListener.class)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,8 +28,6 @@ public class User {
     @Column(nullable = false,length = 150,unique = true)
     private String email;
 
-    // Định nghĩa kiểu ENUM lưu xuống database dưới dạng chuỗi (String) thay vì số thứ tự
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
 
@@ -36,4 +37,14 @@ public class User {
     @Column(length = 20)
     private String phone;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

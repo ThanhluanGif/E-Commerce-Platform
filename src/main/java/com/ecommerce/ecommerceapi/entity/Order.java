@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Entity
@@ -18,6 +19,9 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id; // id INT (Khóa chính tự tăng)
+
+    @Column(name = "order_code", length = 100, unique = true)
+    private String orderCode;
 
     @Column(name = "total_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPrice; // total_price DECIMAL(12,2) - Chuẩn tiền tệ đơn hàng lớn
@@ -40,6 +44,9 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false) // Tự động ánh xạ cột user_id dưới database
     private User user;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems;
 
     // --- HÀM TỰ ĐỘNG THÊM THỜI GIAN KHI TẠO ĐƠN ---
     @PrePersist

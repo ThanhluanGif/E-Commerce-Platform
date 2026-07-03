@@ -17,8 +17,17 @@ public class Category {
     private Integer id;
 
 
-    @Column(nullable = false,length = 255)
+    @Column(nullable = false, length = 255)
     private String name;
+
+    @Column(nullable = false, length = 255, unique = true)
+    private String slug;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
     // --- CẤU HÌNH MỐI QUAN HỆ ĐỆ QUY (SELF-REFERENCE) ---
 

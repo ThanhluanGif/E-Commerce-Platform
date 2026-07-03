@@ -1,68 +1,317 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import {useEffect, useState} from 'react'
-
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import productService from '../services/productService';
+import categoryService from '../services/categoryService';
 
 function ProductList() {
-
-    // 1. Tạo một State để lưu trữ danh sách sản phẩm từ Backend đổ về (ban đầu là mảng rỗng)
+    const [searchParams] = useSearchParams();
     const [products, setProducts] = useState([]);
-
-    // State để lưu trạng thái đang tải dữ liệu hoặc lỗi nếu có
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // 2. useEffect dùng để tự động chạy đoạn code gọi API ngay khi giao diện trang web vừa nạp xong
+    // Filter states
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('name') || '');
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('categoryId') || '');
+
+    // Sync search input when name param in URL changes
     useEffect(() => {
-        // Hàm gọi API sang Backend Spring Boot
-        fetch('http://localhost:8080/api/products') // Đường dẫn API của bạn bên Spring Boot
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Không thể kết nối đến Backend hoặc API bị lỗi!');
+        const nameParam = searchParams.get('name');
+        if (nameParam !== null) {
+            setSearchTerm(nameParam);
+            setPage(0);
+        }
+    }, [searchParams]);
+    const [minPrice, setMinPrice] = useState('');
+    const [maxPrice, setMaxPrice] = useState('');
+    const [sortBy, setSortBy] = useState('createdAt,desc');
+    
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [pageSize] = useState(6);
+
+    // Fetch categories on mount
+    useEffect(() => {
+        categoryService.getAllCategories()
+            .then(res => {
+                if (res && res.success && Array.isArray(res.data)) {
+                    setCategories(res.data);
                 }
-                return response.json(); // Chuyển đổi dữ liệu nhận được từ dạng chuỗi sang JSON
             })
-            .then((data) => {
-                setProducts(data); // Nạp dữ liệu thật vào State 'products'
-                setLoading(false); // Tắt trạng thái đang tải
+            .catch(err => console.error("Error loading categories:", err));
+    }, []);
+
+    // Sync selectedCategory when categoryId param in URL changes
+    useEffect(() => {
+        const catId = searchParams.get('categoryId');
+        if (catId !== null) {
+            setSelectedCategory(catId);
+            setPage(0);
+        }
+    }, [searchParams]);
+
+    // Fetch products when filters or pagination changes
+    useEffect(() => {
+        setLoading(true);
+        const params = {
+            page: page,
+            size: pageSize,
+            sort: sortBy
+        };
+
+        if (searchTerm.trim() !== '') params.name = searchTerm;
+        if (selectedCategory !== '') params.categoryId = selectedCategory;
+        if (minPrice !== '') params.minPrice = minPrice;
+        if (maxPrice !== '') params.maxPrice = maxPrice;
+
+        productService.getAllProducts(params)
+            .then(res => {
+                if (res && res.success && res.data) {
+                    setProducts(res.data.content || []);
+                    setTotalPages(res.data.totalPages || 1);
+                } else {
+                    setProducts([]);
+                }
+                setLoading(false);
             })
-            .catch((err) => {
-                setError(err.message); // Lưu lại thông báo lỗi nếu Backend chưa bật hoặc lỗi API
+            .catch(err => {
+                setError(err.message);
                 setLoading(false);
             });
-    }, []); // Mảng rỗng [] ở đây nghĩa là chỉ chạy duy nhất 1 lần khi mở trang lên
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, sortBy, selectedCategory, minPrice, maxPrice, pageSize]);
 
-    // 3. Xử lý hiển thị các trạng thái giao diện thô
-    if (loading) return <div style={{ padding: '20px' }}>⏳ Đang tải dữ liệu từ Backend Spring Boot...</div>;
-    if (error) return <div style={{ padding: '20px', color: 'red' }}>❌ Thông báo lỗi: {error}</div>;
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        setPage(0); // Reset to page 1
+        // Trigger fetch by dependency array logic
+        setLoading(true);
+        const params = {
+            page: 0,
+            size: pageSize,
+            sort: sortBy,
+            name: searchTerm
+        };
+        if (selectedCategory !== '') params.categoryId = selectedCategory;
+        if (minPrice !== '') params.minPrice = minPrice;
+        if (maxPrice !== '') params.maxPrice = maxPrice;
 
+        productService.getAllProducts(params)
+            .then(res => {
+                if (res && res.success && res.data) {
+                    setProducts(res.data.content || []);
+                    setTotalPages(res.data.totalPages || 1);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                setError(err.message);
+                setLoading(false);
+            });
+    };
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setSelectedCategory('');
+        setMinPrice('');
+        setMaxPrice('');
+        setSortBy('createdAt,desc');
+        setPage(0);
+    };
 
     return (
-        <div style={{ padding: '20px', border: '2px dashed green' }}>
-            <p style={{ color: 'green', margin: 0 }}>[Trang danh sách sản phẩm - Dữ liệu động thực tế]</p>
+        <div style={{ padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a1a', marginBottom: '20px', borderBottom: '2px solid #f3f4f6', paddingBottom: '10px' }}>
+                Danh Mục Sản Phẩm
+            </h2>
 
-            <h2>DANH SÁCH SẢN PHẨM TỪ DATABASE</h2>
+            <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
+                {/* 1. SIDEBAR FILTER (Bên trái) */}
+                <div style={{ flex: '1 1 250px', maxWidth: '300px', background: '#f9fafb', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', height: 'fit-content' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px', color: '#2c3e50', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Bộ lọc tìm kiếm</span>
+                        <button onClick={handleClearFilters} style={{ background: 'none', border: 'none', color: '#3643ba', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>Xóa bộ lọc</button>
+                    </h3>
 
-            {/* Nếu mảng rỗng (chưa có sản phẩm nào dưới DB) */}
-            {products.length === 0 ? (
-                <p>Hiện tại không có sản phẩm nào trong cơ sở dữ liệu.</p>
-            ) : (
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px' }}>
-                    {/* Vòng lặp map dữ liệu thật từ Backend */}
-                    {products.map((product) => (
-                        <div key={product.id} style={{ border: '1px solid #000', padding: '15px', width: '220px' }}>
-                            {/* Lưu ý: Các trường như .name, .price phải trùng khớp với thuộc tính trong Entity Java của bạn */}
-                            <h4>{product.name}</h4>
-                            <p>Giá: {product.price.toLocaleString()} đ</p>
+                    {/* Lọc theo danh mục */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: '600', fontSize: '14px', marginBottom: '8px', color: '#4b5563' }}>Danh mục</label>
+                        <select 
+                            value={selectedCategory} 
+                            onChange={(e) => { setSelectedCategory(e.target.value); setPage(0); }}
+                            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', outline: 'none' }}
+                        >
+                            <option value="">Tất cả danh mục</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                            <Link to={`/products/${product.id}`}>
-                                <button style={{ cursor: 'pointer' }}>Xem chi tiết</button>
-                            </Link>
+                    {/* Lọc theo giá */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: '600', fontSize: '14px', marginBottom: '8px', color: '#4b5563' }}>Khoảng giá (VNĐ)</label>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <input 
+                                type="number" 
+                                placeholder="Từ" 
+                                value={minPrice}
+                                onChange={(e) => { setMinPrice(e.target.value); setPage(0); }}
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px' }}
+                            />
+                            <span style={{ color: '#9ca3af' }}>-</span>
+                            <input 
+                                type="number" 
+                                placeholder="Đến" 
+                                value={maxPrice}
+                                onChange={(e) => { setMaxPrice(e.target.value); setPage(0); }}
+                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px' }}
+                            />
                         </div>
-                    ))}
+                    </div>
                 </div>
-            )}
+
+                {/* 2. PRODUCT GRID & SEARCH/SORT (Bên phải) */}
+                <div style={{ flex: '3 1 600px' }}>
+                    {/* Thanh tìm kiếm và sắp xếp */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '15px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+                        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flex: '1 1 300px', gap: '10px' }}>
+                            <input 
+                                type="text" 
+                                placeholder="Tìm kiếm sản phẩm..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ flex: 1, padding: '10px 15px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', outline: 'none' }}
+                            />
+                            <button type="submit" style={{ background: '#3643ba', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                                Tìm
+                            </button>
+                        </form>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <label style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>Sắp xếp:</label>
+                            <select 
+                                value={sortBy}
+                                onChange={(e) => { setSortBy(e.target.value); setPage(0); }}
+                                style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', outline: 'none' }}
+                            >
+                                <option value="createdAt,desc">Mới nhất</option>
+                                <option value="price,asc">Giá: Thấp đến Cao</option>
+                                <option value="price,desc">Giá: Cao đến Thấp</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Hiển thị lỗi hoặc loading */}
+                    {error && <div style={{ padding: '20px', color: 'red', background: '#fef2f2', borderRadius: '6px', marginBottom: '20px', border: '1px solid #fee2e2' }}>❌ Lỗi: {error}</div>}
+
+                    {loading ? (
+                        /* SKELETON LOADING GRID */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <div key={i} style={{ border: '1px solid #f3f4f6', padding: '15px', borderRadius: '8px', background: '#fff' }}>
+                                    <div style={{ height: '180px', background: '#f3f4f6', borderRadius: '6px', marginBottom: '15px', animation: 'pulse 1.5s infinite ease-in-out' }}></div>
+                                    <div style={{ height: '20px', background: '#f3f4f6', width: '70%', marginBottom: '10px', borderRadius: '3px' }}></div>
+                                    <div style={{ height: '15px', background: '#f3f4f6', width: '50%', marginBottom: '15px', borderRadius: '3px' }}></div>
+                                    <div style={{ height: '35px', background: '#f3f4f6', width: '100%', borderRadius: '4px' }}></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : products.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px', background: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db', color: '#6b7280' }}>
+                            <p style={{ fontSize: '18px', fontWeight: '600' }}>Không tìm thấy sản phẩm nào!</p>
+                            <p style={{ fontSize: '14px' }}>Hãy thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm của bạn.</p>
+                        </div>
+                    ) : (
+                        /* PRODUCT CARD GRID */
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                                {products.map((product) => {
+                                    const hasSale = product.salePrice && product.salePrice > 0;
+                                    return (
+                                        <div key={product.id} style={{ border: '1px solid #e5e7eb', padding: '15px', borderRadius: '8px', background: '#fff', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' }}
+                                             onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)'; }}
+                                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                            
+                                            {/* Product Image */}
+                                            <div style={{ height: '180px', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', overflow: 'hidden', marginBottom: '15px', position: 'relative' }}>
+                                                <img 
+                                                    src={product.imageUrl || "https://via.placeholder.com/200"} 
+                                                    alt={product.name} 
+                                                    style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                                />
+                                                {hasSale && (
+                                                    <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#ef4444', color: 'white', fontSize: '12px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '4px' }}>
+                                                        GIẢM GIÁ
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Product Details */}
+                                            <h4 style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0', minHeight: '40px', lineBreak: 'anywhere' }}>{product.name}</h4>
+                                            
+                                            {/* Price Display */}
+                                            <div style={{ margin: 'auto 0 15px 0' }}>
+                                                {hasSale ? (
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ef4444' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
+                                                        <span style={{ fontSize: '13px', color: '#9ca3af', textDecoration: 'line-through' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#3643ba' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                                                )}
+                                            </div>
+
+                                            {/* CTA Button */}
+                                            <Link to={`/products/${product.id}`} style={{ textDecoration: 'none', width: '100%' }}>
+                                                <button style={{ width: '100%', padding: '10px 0', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
+                                                        onMouseEnter={(e) => e.target.style.background = '#2a3494'}
+                                                        onMouseLeave={(e) => e.target.style.background = '#3643ba'}>
+                                                    Xem chi tiết
+                                                </button>
+                                            </Link>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* PAGINATION CONTROLS */}
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '30px', alignItems: 'center' }}>
+                                <button 
+                                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                                    disabled={page === 0}
+                                    style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #d1d5db', background: page === 0 ? '#f3f4f6' : 'white', cursor: page === 0 ? 'not-allowed' : 'pointer', fontSize: '14px', color: page === 0 ? '#9ca3af' : '#1f2937' }}
+                                >
+                                    &larr; Trước
+                                </button>
+                                
+                                <span style={{ fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>
+                                    Trang {page + 1} / {totalPages}
+                                </span>
+
+                                <button 
+                                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                    disabled={page === totalPages - 1}
+                                    style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #d1d5db', background: page === totalPages - 1 ? '#f3f4f6' : 'white', cursor: page === totalPages - 1 ? 'not-allowed' : 'pointer', fontSize: '14px', color: page === totalPages - 1 ? '#9ca3af' : '#1f2937' }}
+                                >
+                                    Sau &rarr;
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+            
+            {/* CSS Animation injection for loading spinner skeleton */}
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: .5; }
+                }
+            `}</style>
         </div>
     );
 }
+
 export default ProductList;
