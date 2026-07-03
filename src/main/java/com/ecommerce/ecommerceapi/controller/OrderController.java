@@ -105,6 +105,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đơn hàng thành công!", convertToDTO(updatedOrder)));
     }
 
+    // 7. POST: Thanh toán đơn hàng giả lập (MOMO/VNPAY)
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<ApiResponse<OrderDTO>> payOrder(@PathVariable Integer id) {
+        Order paidOrder = orderService.payOrder(id);
+        return ResponseEntity.ok(ApiResponse.success("Thanh toán đơn hàng thành công!", convertToDTO(paidOrder)));
+    }
+
     private OrderDTO convertToDTO(Order order) {
         List<OrderItemDTO> itemDTOs = null;
         if (order.getOrderItems() != null) {

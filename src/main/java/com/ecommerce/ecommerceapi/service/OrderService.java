@@ -158,6 +158,16 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    public Order payOrder(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Đơn hàng này không ở trạng thái chờ thanh toán!");
+        }
+        order.setStatus(OrderStatus.SHIPPING);
+        return orderRepository.save(order);
+    }
+
     private void returnStockForOrder(Order order) {
         if (order.getOrderItems() != null) {
             for (OrderItem item : order.getOrderItems()) {

@@ -19,6 +19,11 @@ const orderService = {
   cancelOrder: async (orderId) => {
     const response = await api.put(`/api/orders/${orderId}/cancel`);
     return response.data; // ApiResponse<OrderDTO>
+  },
+
+  payOrder: async (orderId) => {
+    const response = await api.post(`/api/orders/${orderId}/pay`);
+    return response.data; // ApiResponse<OrderDTO>
   }
 };
 

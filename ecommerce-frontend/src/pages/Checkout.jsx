@@ -42,8 +42,12 @@ function Checkout() {
                 const createdOrder = res.data;
                 // Clear the local cart items state
                 await clearCart();
-                // Navigate to success page
-                navigate(`/order-success?code=${createdOrder.orderCode}`);
+                // Navigate to success page or simulated payment gateway
+                if (paymentMethod === 'COD') {
+                    navigate(`/order-success?code=${createdOrder.orderCode}`);
+                } else {
+                    navigate(`/payment-simulation?orderId=${createdOrder.id}&code=${createdOrder.orderCode}&method=${paymentMethod}`);
+                }
             } else {
                 setError(res?.message || "Đặt hàng không thành công, vui lòng thử lại!");
             }
