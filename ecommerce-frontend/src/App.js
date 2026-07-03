@@ -9,6 +9,7 @@ import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/OrderSuccess';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MainLayout from './components/MainLayout';
@@ -33,6 +34,7 @@ function App() {
                             <Route path="/order-success" element={<OrderSuccess />} />
                             <Route path="/orders" element={<Orders />} />
                             <Route path="/orders/:id" element={<OrderDetail />} />
+                            <Route path="/profile" element={<Profile />} />
                         </Route>
                     </Route>
 

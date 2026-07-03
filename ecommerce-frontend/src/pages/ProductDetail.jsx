@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import productService from '../services/productService';
+import reviewService from '../services/reviewService';
 
 function ProductDetail() {
     const { id } = useParams();
@@ -18,7 +19,23 @@ function ProductDetail() {
     const [activeTab, setActiveTab] = useState('description'); // description | reviews
     const [zoomStyle, setZoomStyle] = useState({ display: 'none' });
 
-    // Fetch product details
+    // Review states
+    const [reviews, setReviews] = useState([]);
+    const [canSubmitReview, setCanSubmitReview] = useState(false);
+    const [newRating, setNewRating] = useState(5);
+    const [newComment, setNewComment] = useState('');
+
+    const loadReviews = () => {
+        reviewService.getReviews(id)
+            .then(res => {
+                if (res && res.success && Array.isArray(res.data)) {
+                    setReviews(res.data);
+                }
+            })
+            .catch(err => console.error("Error loading reviews:", err));
+    };
+
+    // Fetch product details & reviews
     useEffect(() => {
         setLoading(true);
         setError(null);
@@ -36,7 +53,6 @@ function ProductDetail() {
                         productService.getProductsByCategoryId(p.categoryId)
                             .then(relatedRes => {
                                 if (relatedRes && relatedRes.success && Array.isArray(relatedRes.data)) {
-                                    // Filter out current product
                                     const filtered = relatedRes.data.filter(item => item.id !== p.id).slice(0, 4);
                                     setRelatedProducts(filtered);
                                 }
@@ -52,12 +68,44 @@ function ProductDetail() {
                 setError(err.message);
                 setLoading(false);
             });
+
+        // Load reviews and review permissions
+        loadReviews();
+        reviewService.canReview(id)
+            .then(res => {
+                if (res && res.success) {
+                    setCanSubmitReview(res.data);
+                }
+            })
+            .catch(err => console.error("Error checking review permission:", err));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const handleAddToCartClick = () => {
         if (product) {
             addToCart(product, quantity);
             alert(`🛒 Đã thêm ${quantity} sản phẩm "${product.name}" vào giỏ hàng!`);
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        if (newComment.trim() === '') return;
+
+        try {
+            const res = await reviewService.addReview(id, {
+                rating: newRating,
+                comment: newComment
+            });
+            if (res && res.success) {
+                alert("Đăng đánh giá thành công!");
+                setNewComment('');
+                setNewRating(5);
+                setCanSubmitReview(false);
+                loadReviews();
+            }
+        } catch (err) {
+            alert("Không thể gửi đánh giá: " + (err.response?.data?.message || err.message));
         }
     };
 
@@ -110,7 +158,6 @@ function ProductDetail() {
                 
                 {/* Image Gallery */}
                 <div style={{ flex: '1 1 400px', maxWidth: '500px' }}>
-                    {/* Main Image View */}
                     <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', position: 'relative', cursor: 'zoom-in' }}
                          onMouseMove={handleMouseMove}
                          onMouseLeave={handleMouseLeave}>
@@ -119,11 +166,9 @@ function ProductDetail() {
                             alt={product.name} 
                             style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                         />
-                        {/* Zoom panel preview */}
                         <div style={zoomStyle}></div>
                     </div>
 
-                    {/* Thumbnail List */}
                     {thumbnails.length > 1 && (
                         <div style={{ display: 'flex', gap: '10px', marginTop: '15px', overflowX: 'auto', paddingBottom: '5px' }}>
                             {thumbnails.map(thumb => (
@@ -137,14 +182,13 @@ function ProductDetail() {
                     )}
                 </div>
 
-                {/* Product Info details */}
+                {/* Product Info */}
                 <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '13px', color: '#6b7280', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '8px' }}>
                         {product.categoryName || 'Sản phẩm'}
                     </span>
                     <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', margin: '0 0 15px 0', lineHeight: '1.2' }}>{product.name}</h2>
                     
-                    {/* Price & Stock info */}
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px' }}>
                         {hasSale ? (
                             <>
@@ -161,7 +205,6 @@ function ProductDetail() {
 
                     <div style={{ width: '100%', height: '1px', background: '#e5e7eb', marginBottom: '20px' }}></div>
 
-                    {/* Quantity selectors */}
                     {product.stockQuantity > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px' }}>
                             <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#4b5563' }}>Số lượng:</span>
@@ -183,7 +226,6 @@ function ProductDetail() {
                         </div>
                     )}
 
-                    {/* Action buttons */}
                     <div style={{ display: 'flex', gap: '15px' }}>
                         <button 
                             onClick={handleAddToCartClick}
@@ -196,7 +238,7 @@ function ProductDetail() {
                 </div>
             </div>
 
-            {/* TAB SYSTEM: Description & Reviews */}
+            {/* TAB SYSTEM */}
             <div style={{ marginBottom: '50px' }}>
                 <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '20px' }}>
                     <button 
@@ -209,7 +251,7 @@ function ProductDetail() {
                         onClick={() => setActiveTab('reviews')}
                         style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'reviews' ? '3px solid #3643ba' : 'none', color: activeTab === 'reviews' ? '#3643ba' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
-                        Đánh giá & Bình luận (3)
+                        Đánh giá & Bình luận ({reviews.length})
                     </button>
                 </div>
 
@@ -219,24 +261,60 @@ function ProductDetail() {
                     </div>
                 ) : (
                     <div style={{ padding: '10px 0' }}>
-                        {/* Mock reviews */}
-                        {[
-                            { name: 'Nguyễn Văn A', rating: 5, comment: 'Sản phẩm chất lượng tuyệt vời, đóng gói rất kỹ càng. Sẽ ủng hộ shop lần sau!', date: '01/07/2026' },
-                            { name: 'Trần Thị B', rating: 4, comment: 'Máy chạy êm, giao hàng nhanh. Nhưng hơi bám bụi tí.', date: '28/06/2026' },
-                            { name: 'Lê Hoàng C', rating: 5, comment: 'Đáng đồng tiền bát gạo nha mọi người. Đánh giá 5 sao!', date: '20/06/2026' }
-                        ].map((rev, index) => (
-                            <div key={index} style={{ borderBottom: '1px solid #f3f4f6', padding: '15px 0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                    <strong style={{ fontSize: '15px', color: '#1f2937' }}>{rev.name}</strong>
-                                    <span style={{ fontSize: '13px', color: '#9ca3af' }}>{rev.date}</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: '3px', color: '#fbbf24', fontSize: '14px', marginBottom: '8px' }}>
-                                    {Array.from({ length: rev.rating }).map((_, i) => <span key={i}>★</span>)}
-                                    {Array.from({ length: 5 - rev.rating }).map((_, i) => <span key={i} style={{ color: '#e5e7eb' }}>★</span>)}
-                                </div>
-                                <p style={{ margin: 0, fontSize: '14px', color: '#4b5563' }}>{rev.comment}</p>
+                        {/* Write a review section */}
+                        {canSubmitReview && (
+                            <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold', color: '#1f2937' }}>Đánh giá sản phẩm này</h4>
+                                <form onSubmit={handleReviewSubmit}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>Chọn số sao:</span>
+                                        <div style={{ display: 'flex', gap: '5px', cursor: 'pointer', fontSize: '20px', color: '#fbbf24' }}>
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <span key={star} onClick={() => setNewRating(star)}>
+                                                    {star <= newRating ? '★' : '☆'}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                                        <label style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>Nhận xét chi tiết *</label>
+                                        <textarea 
+                                            rows="3"
+                                            value={newComment}
+                                            onChange={(e) => setNewComment(e.target.value)}
+                                            placeholder="Cảm nhận của bạn về sản phẩm này (chất lượng, đóng gói, vận chuyển...)"
+                                            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+                                            required
+                                        />
+                                    </div>
+                                    <button type="submit" style={{ padding: '8px 20px', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
+                                        Gửi đánh giá
+                                    </button>
+                                </form>
                             </div>
-                        ))}
+                        )}
+
+                        {/* List reviews */}
+                        {reviews.length === 0 ? (
+                            <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '20px 0' }}>Chưa có đánh giá nào cho sản phẩm này.</p>
+                        ) : (
+                            reviews.map((rev) => {
+                                const dateStr = new Date(rev.createdAt).toLocaleDateString('vi-VN');
+                                return (
+                                    <div key={rev.id} style={{ borderBottom: '1px solid #f3f4f6', padding: '15px 0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                            <strong style={{ fontSize: '15px', color: '#1f2937' }}>{rev.username}</strong>
+                                            <span style={{ fontSize: '13px', color: '#9ca3af' }}>{dateStr}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '3px', color: '#fbbf24', fontSize: '14px', marginBottom: '8px' }}>
+                                            {Array.from({ length: rev.rating }).map((_, i) => <span key={i}>★</span>)}
+                                            {Array.from({ length: 5 - rev.rating }).map((_, i) => <span key={i} style={{ color: '#e5e7eb' }}>★</span>)}
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '14px', color: '#4b5563' }}>{rev.comment}</p>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 )}
             </div>

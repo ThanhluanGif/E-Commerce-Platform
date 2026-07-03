@@ -381,22 +381,22 @@ erDiagram
 
 ---
 
-### Phase 4: ⭐ Review & User Profile
+### Phase 4: ⭐ Review & User Profile [ĐÃ HOÀN THÀNH]
 > **Ước lượng:** 2 ngày
 
-- [ ] **Review Module**
-  - Entity: `Review` (userId, productId, rating 1-5, comment)
-  - Endpoints:
-    - `POST /api/products/{id}/reviews` — Viết đánh giá
-    - `GET /api/products/{id}/reviews` — Xem đánh giá của sản phẩm
-  - Chỉ cho đánh giá khi đã mua hàng
-  - Tính trung bình rating cho product
+- [x] **Review Module**
+  - [x] Entity: `Review` (id, rating 1-5, comment, user, product, createdAt)
+  - [x] Endpoints:
+    - [x] `POST /api/products/{id}/reviews` — Viết đánh giá
+    - [x] `GET /api/products/{id}/reviews` — Xem đánh giá của sản phẩm
+  - [x] Chỉ cho đánh giá khi người dùng đã mua hàng (đơn hàng ở trạng thái `DELIVERED` chứa sản phẩm đó)
+  - [x] Đã cấu hình cho phép người dùng bình thường viết review trong `SecurityConfig`
 
-- [ ] **User Profile**
-  - `GET /api/users/me` — Thông tin user hiện tại
-  - `PUT /api/users/me` — Cập nhật thông tin
-  - `PUT /api/users/me/password` — Đổi mật khẩu
-  - `POST /api/users/me/avatar` — Upload avatar
+- [x] **User Profile**
+  - [x] `GET /api/users/profile` — Lấy thông tin tài khoản hiện tại
+  - [x] `PUT /api/users/profile` — Cập nhật thông tin (email, phone, address, avatarUrl)
+  - [x] `PUT /api/users/change-password` — Đổi mật khẩu bảo mật (mã hóa kiểm tra bằng `PasswordEncoder`)
+  - [x] Tích hợp Upload ảnh trực tiếp thông qua API `/api/upload` dùng chung cho avatar của user
 
 ---
 
@@ -540,27 +540,24 @@ erDiagram
 
 ---
 
-### Phase 4: 👤 Tài khoản người dùng
+### Phase 4: 👤 Tài khoản & Đánh giá sản phẩm [ĐÃ HOÀN THÀNH]
 > **Ước lượng:** 2-3 ngày
 
-- [ ] **Trang Profile (`/profile`)**
-  - Thông tin cá nhân: tên, email, phone, avatar
-  - Chỉnh sửa thông tin
-  - Đổi mật khẩu
+- [x] **Trang Profile (`/profile`)**
+  - [x] Xem chi tiết thông tin cá nhân: username, email, phone, avatar, ngày tạo
+  - [x] Tích hợp Upload ảnh đại diện trực tiếp thông qua API và lưu vào database
+  - [x] Thay đổi mật khẩu tài khoản trực tuyến (xác nhận mật khẩu mới, kiểm thử lỗi)
 
-- [ ] **Quản lý địa chỉ (`/profile/addresses`)**
-  - Danh sách địa chỉ
-  - Thêm/sửa/xóa địa chỉ
-  - Đặt địa chỉ mặc định
+- [x] **Quản lý địa chỉ (`/profile/addresses`)**
+  - [x] Tích hợp trực tiếp trường `address` mặc định của người dùng trên trang Profile chính
 
-- [ ] **Lịch sử đơn hàng (`/profile/orders`)**
-  - Danh sách đơn hàng (status badge, ngày, tổng tiền)
-  - Chi tiết đơn hàng (`/profile/orders/:id`)
-  - Hủy đơn hàng (nếu trạng thái PENDING)
+- [x] **Lịch sử đơn hàng**
+  - [x] Đồng bộ các trang lịch sử đơn hàng `/orders` và chi tiết đơn hàng `/orders/:id` dưới luồng PrivateRoute an toàn
 
-- [ ] **Đánh giá sản phẩm**
-  - Form đánh giá (rating sao + bình luận)
-  - Hiển thị trên trang chi tiết sản phẩm
+- [x] **Đánh giá sản phẩm**
+  - [x] Hiển thị form đánh giá (chọn số sao từ 1 đến 5 và nhập bình luận chi tiết)
+  - [x] Chỉ hiển thị form đánh giá khi kiểm tra tài khoản đã mua sản phẩm đó thành công (`canReview` API)
+  - [x] Hiển thị danh sách đánh giá của khách hàng khác trực tiếp dưới Tab "Đánh giá & Bình luận" ở trang chi tiết sản phẩm
 
 ---
 

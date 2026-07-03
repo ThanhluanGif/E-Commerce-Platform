@@ -56,6 +56,7 @@ function Navbar() {
                 {isAuthenticated ? (
                     <>
                         <span style={{ color: '#ecf0f1' }}>Chào, <strong>{username}</strong>!</span>
+                        <Link to="/profile" style={{ color: '#fff', textDecoration: 'none' }}>Tài khoản</Link>
                         <Link to="/orders" style={{ color: '#fff', textDecoration: 'none' }}>Đơn hàng</Link>
                         <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #fff', color: '#fff', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>
                             Đăng xuất
