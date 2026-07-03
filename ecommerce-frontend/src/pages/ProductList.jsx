@@ -229,48 +229,65 @@ function ProductList() {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
                                 {products.map((product) => {
                                     const hasSale = product.salePrice && product.salePrice > 0;
+                                    const discountPct = hasSale ? Math.round(((product.price - product.salePrice) / product.price) * 100) : 0;
                                     return (
-                                        <div key={product.id} style={{ border: '1px solid #e5e7eb', padding: '15px', borderRadius: '8px', background: '#fff', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' }}
-                                             onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)'; }}
-                                             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                                        <div key={product.id} style={{ border: '1px solid #f3f4f6', borderRadius: '4px', background: '#fff', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
+                                             className="hover-lift">
                                             
+                                            {/* Discount Badge */}
+                                            {hasSale && (
+                                                <div style={{ position: 'absolute', top: 0, right: 0, background: '#ffe9e4', color: '#f94e30', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '0 0 0 8px', zIndex: 2 }}>
+                                                    -{discountPct}%
+                                                </div>
+                                            )}
+
                                             {/* Product Image */}
-                                            <div style={{ height: '180px', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', overflow: 'hidden', marginBottom: '15px', position: 'relative' }}>
+                                            <div style={{ height: '180px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f3f4f6', padding: '10px' }}>
                                                 <img 
                                                     src={product.imageUrl || "https://via.placeholder.com/200"} 
                                                     alt={product.name} 
                                                     style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                                                 />
-                                                {hasSale && (
-                                                    <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#ef4444', color: 'white', fontSize: '12px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '4px' }}>
-                                                        GIẢM GIÁ
-                                                    </span>
-                                                )}
                                             </div>
 
                                             {/* Product Details */}
-                                            <h4 style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', margin: '0 0 8px 0', minHeight: '40px', lineBreak: 'anywhere' }}>{product.name}</h4>
-                                            
-                                            {/* Price Display */}
-                                            <div style={{ margin: 'auto 0 15px 0' }}>
-                                                {hasSale ? (
-                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ef4444' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
-                                                        <span style={{ fontSize: '13px', color: '#9ca3af', textDecoration: 'line-through' }}>{product.price.toLocaleString('vi-VN')} đ</span>
-                                                    </div>
-                                                ) : (
-                                                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#3643ba' }}>{product.price.toLocaleString('vi-VN')} đ</span>
-                                                )}
-                                            </div>
+                                            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                                <h4 style={{ fontSize: '13px', color: '#333', fontWeight: '500', margin: '0 0 8px 0', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '36px' }}>
+                                                    {product.name}
+                                                </h4>
+                                                
+                                                {/* Badges row */}
+                                                <div style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
+                                                    <span style={{ fontSize: '9px', background: '#ffe4de', color: '#f94e30', padding: '1px 4px', borderRadius: '2px', fontWeight: 'bold' }}>Freeship+</span>
+                                                </div>
 
-                                            {/* CTA Button */}
-                                            <Link to={`/products/${product.id}`} style={{ textDecoration: 'none', width: '100%' }}>
-                                                <button style={{ width: '100%', padding: '10px 0', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
-                                                        onMouseEnter={(e) => e.target.style.background = '#2a3494'}
-                                                        onMouseLeave={(e) => e.target.style.background = '#3643ba'}>
-                                                    Xem chi tiết
-                                                </button>
-                                            </Link>
+                                                {/* Price Display */}
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexWrap: 'wrap', marginBottom: '8px', marginTop: 'auto' }}>
+                                                    {hasSale ? (
+                                                        <>
+                                                            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f94e30' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
+                                                            <span style={{ fontSize: '11px', color: '#9ca3af', textDecoration: 'line-through' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                                                        </>
+                                                    ) : (
+                                                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#f94e30' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                                                    )}
+                                                </div>
+
+                                                {/* Rating & Sold count */}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#757575', marginBottom: '10px' }}>
+                                                    <div style={{ color: '#fbbf24' }}>★ 4.8</div>
+                                                    <div>Đã bán 120</div>
+                                                </div>
+
+                                                {/* CTA Button */}
+                                                <Link to={`/products/${product.id}`} style={{ textDecoration: 'none', width: '100%' }}>
+                                                    <button style={{ width: '100%', padding: '8px 0', background: '#f94e30', color: 'white', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
+                                                            onMouseEnter={(e) => e.target.style.background = '#d73211'}
+                                                            onMouseLeave={(e) => e.target.style.background = '#f94e30'}>
+                                                        Xem chi tiết
+                                                    </button>
+                                                </Link>
+                                            </div>
                                         </div>
                                     );
                                 })}

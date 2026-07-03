@@ -192,11 +192,11 @@ function ProductDetail() {
                     <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px' }}>
                         {hasSale ? (
                             <>
-                                <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#ef4444' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
+                                <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#f94e30' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
                                 <span style={{ fontSize: '18px', color: '#9ca3af', textDecoration: 'line-through' }}>{product.price.toLocaleString('vi-VN')} đ</span>
                             </>
                         ) : (
-                            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#3643ba' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#f94e30' }}>{product.price.toLocaleString('vi-VN')} đ</span>
                         )}
                         <span style={{ marginLeft: 'auto', background: product.stockQuantity > 0 ? '#ecfdf5' : '#fef2f2', color: product.stockQuantity > 0 ? '#059669' : '#dc2626', fontSize: '13px', fontWeight: '600', padding: '4px 10px', borderRadius: '12px' }}>
                             {product.stockQuantity > 0 ? `Còn hàng (${product.stockQuantity})` : 'Hết hàng'}
@@ -230,7 +230,7 @@ function ProductDetail() {
                         <button 
                             onClick={handleAddToCartClick}
                             disabled={product.stockQuantity <= 0}
-                            style={{ flex: 1, padding: '15px 30px', background: product.stockQuantity <= 0 ? '#d1d5db' : '#3643ba', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: product.stockQuantity <= 0 ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+                            style={{ flex: 1, padding: '15px 30px', background: product.stockQuantity <= 0 ? '#d1d5db' : '#f94e30', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: product.stockQuantity <= 0 ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
                         >
                             {product.stockQuantity <= 0 ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ HÀNG'}
                         </button>
@@ -243,13 +243,13 @@ function ProductDetail() {
                 <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '20px' }}>
                     <button 
                         onClick={() => setActiveTab('description')}
-                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'description' ? '3px solid #3643ba' : 'none', color: activeTab === 'description' ? '#3643ba' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'description' ? '3px solid #f94e30' : 'none', color: activeTab === 'description' ? '#f94e30' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                         Mô tả sản phẩm
                     </button>
                     <button 
                         onClick={() => setActiveTab('reviews')}
-                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'reviews' ? '3px solid #3643ba' : 'none', color: activeTab === 'reviews' ? '#3643ba' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'reviews' ? '3px solid #f94e30' : 'none', color: activeTab === 'reviews' ? '#f94e30' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                         Đánh giá & Bình luận ({reviews.length})
                     </button>
@@ -287,7 +287,7 @@ function ProductDetail() {
                                             required
                                         />
                                     </div>
-                                    <button type="submit" style={{ padding: '8px 20px', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
+                                    <button type="submit" style={{ padding: '8px 20px', background: '#f94e30', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
                                         Gửi đánh giá
                                     </button>
                                 </form>
@@ -344,14 +344,14 @@ function ProductDetail() {
                                                 <span style={{ fontSize: '11px', color: '#9ca3af', textDecoration: 'line-through' }}>{rel.price.toLocaleString('vi-VN')} đ</span>
                                             </div>
                                         ) : (
-                                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#3643ba' }}>{rel.price.toLocaleString('vi-VN')} đ</span>
+                                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f94e30' }}>{rel.price.toLocaleString('vi-VN')} đ</span>
                                         )}
                                     </div>
 
                                     <Link to={`/products/${rel.id}`} style={{ textDecoration: 'none' }}>
-                                        <button style={{ width: '100%', padding: '8px 0', background: 'white', border: '1px solid #3643ba', color: '#3643ba', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-                                                onMouseEnter={(e) => { e.target.style.background = '#3643ba'; e.target.style.color = 'white'; }}
-                                                onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.color = '#3643ba'; }}>
+                                        <button style={{ width: '100%', padding: '8px 0', background: 'white', border: '1px solid #f94e30', color: '#f94e30', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+                                                onMouseEnter={(e) => { e.target.style.background = '#f94e30'; e.target.style.color = 'white'; }}
+                                                onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.color = '#f94e30'; }}>
                                             Xem chi tiết
                                         </button>
                                     </Link>
