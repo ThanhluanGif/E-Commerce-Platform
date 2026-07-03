@@ -10,6 +10,10 @@ import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -82,10 +86,11 @@ public class OrderController {
     // 5. GET: Quản lý xem toàn bộ đơn hàng (Chỉ dành cho ADMIN)
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<OrderDTO>>> getAllOrders() {
-        List<OrderDTO> orders = orderService.getAllOrders().stream()
-                .map(this::convertToDTO)
-                .toList();
+    public ResponseEntity<ApiResponse<Page<OrderDTO>>> getAllOrders(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<OrderDTO> orders = orderService.getAllOrders(pageable)
+                .map(this::convertToDTO);
         return ResponseEntity.ok(ApiResponse.success("Lấy toàn bộ danh sách đơn hàng thành công!", orders));
     }
 

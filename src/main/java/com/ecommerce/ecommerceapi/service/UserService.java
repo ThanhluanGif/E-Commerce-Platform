@@ -67,6 +67,16 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public org.springframework.data.domain.Page<User> getAllUsers(org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
+    public User changeUserRole(Integer id, com.ecommerce.ecommerceapi.entity.UserRole role) {
+        User user = getUserById(id);
+        user.setRole(role);
+        return userRepository.save(user);
+    }
+
     public UserDTO convertToDTO(User user) {
         return UserDTO.builder()
                 .id(user.getId())

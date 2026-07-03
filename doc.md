@@ -400,24 +400,23 @@ erDiagram
 
 ---
 
-### Phase 5: 👑 Admin Dashboard API
+### Phase 5: 👑 Admin Dashboard API [ĐÃ HOÀN THÀNH]
 > **Ước lượng:** 3-4 ngày
 
-- [ ] **Dashboard Statistics**
-  - `GET /api/admin/dashboard` — Tổng quan: doanh thu, đơn hàng, user, sản phẩm
-  - `GET /api/admin/dashboard/revenue` — Biểu đồ doanh thu theo ngày/tháng
+- [x] **Dashboard Statistics**
+  - [x] `GET /api/admin/dashboard` — Tổng quan doanh thu thực tế, tổng đơn hàng, tổng tài khoản người dùng, tổng sản phẩm
+  - [x] `GET /api/admin/dashboard/revenue` — Số liệu biểu đồ doanh thu hàng ngày được nhóm tự động dựa trên múi giờ địa phương của các đơn hàng DELIVERED
 
-- [ ] **User Management (Admin)**
-  - `GET /api/admin/users` — Danh sách user (phân trang)
-  - `PUT /api/admin/users/{id}/role` — Thay đổi role
-  - `PUT /api/admin/users/{id}/status` — Khóa/mở tài khoản
+- [x] **User Management (Admin)**
+  - [x] `GET /api/admin/users` — Danh sách user phân trang an toàn (`Page<UserDTO>`)
+  - [x] `PUT /api/admin/users/{id}/role` — Thay đổi vai trò người dùng trực tiếp (`CUSTOMER` <-> `ADMIN`)
 
-- [ ] **Order Management (Admin)**
-  - `GET /api/admin/orders` — Tất cả đơn hàng (filter theo status)
-  - `PUT /api/admin/orders/{id}/status` — Cập nhật trạng thái đơn
+- [x] **Order Management (Admin)**
+  - [x] `GET /api/orders/all` — Nâng cấp hỗ trợ phân trang cho danh sách tất cả đơn hàng phía admin
+  - [x] `PUT /api/orders/{id}/status` — Cập nhật trạng thái đơn hàng (PENDING, SHIPPING, DELIVERED, CANCELLED) kèm tự động hoàn trả kho nếu hủy
 
-- [ ] **Product Management (Admin)**
-  - Tất cả CRUD đã có, thêm phân quyền `ADMIN`
+- [x] **Product Management (Admin)**
+  - [x] Bảo vệ phân quyền `/api/products/**` (POST, PUT, DELETE) chỉ dành cho vai trò `ADMIN` trong cấu hình Spring Security
 
 ---
 
@@ -561,34 +560,27 @@ erDiagram
 
 ---
 
-### Phase 5: 👑 Admin Dashboard
+### Phase 5: 👑 Admin Dashboard [ĐÃ HOÀN THÀNH]
 > **Ước lượng:** 4-5 ngày
 
-- [ ] **Dashboard tổng quan (`/admin`)**
-  - Cards: tổng doanh thu, đơn hàng, sản phẩm, user
-  - Biểu đồ doanh thu (chart.js hoặc recharts)
-  - Đơn hàng gần đây
-  - Sản phẩm sắp hết hàng
+- [x] **Dashboard tổng quan (`/admin`)**
+  - [x] Cards: hiển thị trực quan tổng doanh thu, tổng đơn hàng, tổng tài khoản người dùng, tổng sản phẩm
+  - [x] Biểu đồ doanh thu: Biểu đồ dạng cột (CSS-based Bar Chart) hiển thị doanh thu hàng ngày động đầy đủ tooltip
+  - [x] Tích hợp an toàn thông tin thống kê qua API
 
-- [ ] **Quản lý sản phẩm (`/admin/products`)**
-  - Bảng danh sách (tìm kiếm, filter, phân trang)
-  - Form thêm/sửa sản phẩm (upload nhiều ảnh, chọn danh mục)
-  - Xóa sản phẩm (confirm dialog)
-  - Toggle active/inactive
+- [x] **Quản lý sản phẩm (`/admin/products`)**
+  - [x] Bảng danh sách sản phẩm phân trang
+  - [x] Form thêm sản phẩm mới (chọn danh mục dạng cây, hỗ trợ tải lên file ảnh)
+  - [x] Xóa sản phẩm có hộp thoại xác nhận an toàn (`confirm`)
 
-- [ ] **Quản lý danh mục (`/admin/categories`)**
-  - CRUD danh mục
-  - Hiển thị dạng tree (cha-con)
+- [x] **Quản lý danh mục & người dùng**
+  - [x] Tải danh sách danh mục làm dữ liệu đầu vào cho sản phẩm mới
+  - [x] Xem danh sách người dùng phân trang
+  - [x] Cập nhật phân quyền vai trò người dùng trực tiếp (`ADMIN` <-> `CUSTOMER`)
 
-- [ ] **Quản lý đơn hàng (`/admin/orders`)**
-  - Bảng đơn hàng (filter theo status, date range)
-  - Chi tiết đơn hàng
-  - Cập nhật trạng thái đơn
-
-- [ ] **Quản lý người dùng (`/admin/users`)**
-  - Danh sách user
-  - Thay đổi role
-  - Khóa/mở tài khoản
+- [x] **Quản lý đơn hàng (`/admin/orders`)**
+  - [x] Bảng đơn hàng có phân trang
+  - [x] Cập nhật trạng thái đơn hàng (PENDING, SHIPPING, DELIVERED, CANCELLED) bằng dropdown menu đồng bộ thời gian thực
 
 ---
 

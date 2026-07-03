@@ -10,11 +10,12 @@ import OrderSuccess from './pages/OrderSuccess';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
-import { PrivateRoute } from './components/ProtectedRoute';
+import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
 
 function App() {
     return (
@@ -35,6 +36,11 @@ function App() {
                             <Route path="/orders" element={<Orders />} />
                             <Route path="/orders/:id" element={<OrderDetail />} />
                             <Route path="/profile" element={<Profile />} />
+                        </Route>
+
+                        {/* Admin Routes */}
+                        <Route element={<AdminRoute />}>
+                            <Route path="/admin" element={<AdminDashboard />} />
                         </Route>
                     </Route>
 
