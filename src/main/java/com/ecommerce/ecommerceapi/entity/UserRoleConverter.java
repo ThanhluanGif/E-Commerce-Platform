@@ -5,17 +5,18 @@ import jakarta.persistence.Converter;
 public class UserRoleConverter implements AttributeConverter<UserRole, String> {
     @Override
     public String convertToDatabaseColumn(UserRole attribute) {
-        if (attribute == null) return null;
-        // Khi lưu xuống DB: Nếu trong Java là ADMIN -> Biến thành "Admin", CUSTOMER -> "Customer"
+        if (attribute == null) return "Customer";
         return attribute == UserRole.ADMIN ? "Admin" : "Customer";
     }
 
     @Override
     public UserRole convertToEntityAttribute(String dbData) {
-        if (dbData == null) return null;
-        // Khi đọc từ DB lên Java: Nếu dưới DB là "Admin" -> Trả về ADMIN, "Customer" -> Trả về CUSTOMER
-        if (dbData.equalsIgnoreCase("Admin")) return UserRole.ADMIN;
-        if (dbData.equalsIgnoreCase("Customer")) return UserRole.CUSTOMER;
-        throw new IllegalArgumentException("Quyền " + dbData + " không hợp lệ!");
+        if (dbData == null) return UserRole.CUSTOMER;
+        
+        String clean = dbData.trim().toUpperCase();
+        if (clean.contains("ADMIN")) {
+            return UserRole.ADMIN;
+        }
+        return UserRole.CUSTOMER; // Mặc định tất cả các quyền khác (USER, CUSTOMER, ROLE_USER, vv.) về CUSTOMER để tránh lỗi khởi chạy
     }
 }
