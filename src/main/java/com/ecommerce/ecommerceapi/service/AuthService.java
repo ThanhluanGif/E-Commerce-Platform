@@ -68,8 +68,6 @@ public class AuthService {
                 .address(user.getAddress())
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }

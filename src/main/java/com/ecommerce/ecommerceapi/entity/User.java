@@ -39,12 +39,4 @@ public class User {
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }

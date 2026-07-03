@@ -86,8 +86,6 @@ public class UserService {
                 .address(user.getAddress())
                 .role(user.getRole())
                 .avatarUrl(user.getAvatarUrl())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }
