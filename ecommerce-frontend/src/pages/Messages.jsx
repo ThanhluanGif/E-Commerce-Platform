@@ -1,10 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import UserLayout from '../components/UserLayout';
+import { useToast } from '../utils/toast';
+import { getProductImage } from '../utils/helpers';
+import { IconMessage, IconWarning } from '../utils/icons';
+import './Messages.css';
 
 function Messages() {
     const [searchParams] = useSearchParams();
     const targetConvId = searchParams.get('convId');
+    const toast = useToast();
 
     const [conversations, setConversations] = useState([]);
     const [activeConv, setActiveConv] = useState(null);
@@ -68,6 +74,7 @@ function Messages() {
 
     useEffect(() => {
         fetchConversations();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token, isSellerMode]);
 
     useEffect(() => {
@@ -78,6 +85,7 @@ function Messages() {
         } else {
             setMessages([]);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeConv]);
 
     // Simulated realtime polling every 3 seconds
@@ -87,6 +95,7 @@ function Messages() {
             fetchMessages();
         }, 3000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeConv]);
 
     useEffect(() => {
@@ -117,162 +126,146 @@ function Messages() {
         })
         .catch(err => {
             console.error(err);
-            alert("Lỗi khi gửi tin nhắn!");
+            toast.error("Lỗi khi gửi tin nhắn!");
         });
     };
 
-    if (!token) return <div style={{ padding: '40px', color: 'red', textAlign: 'center' }}>Vui lòng đăng nhập để sử dụng tính năng Chat!</div>;
+    if (!token) {
+        return (
+            <div className="container" style={{ padding: 'var(--space-8) 0' }}>
+                <div className="badge badge-danger" style={{ display: 'flex', gap: 6, padding: 'var(--space-4)', width: '100%' }}>
+                    <IconWarning size={14} /> Vui lòng đăng nhập để sử dụng tính năng Chat!
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div style={{ display: 'flex', height: '600px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden', fontFamily: 'system-ui, sans-serif', boxShadow: 'var(--card-shadow)' }}>
-            
-            {/* Conversations list sidebar */}
-            <div style={{ width: '280px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
-                <div style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>Trò Chuyện</h3>
-                    {currentUser?.role === 'SELLER' && (
-                        <button onClick={() => {
-                            setIsSellerMode(!isSellerMode);
-                            setActiveConv(null);
-                        }} style={{
-                            marginLeft: 'auto',
-                            padding: '4px 8px',
-                            background: isSellerMode ? '#10b981' : '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
-                        }}>
-                            {isSellerMode ? 'Chế độ Shop' : 'Chế độ Mua'}
-                        </button>
-                    )}
-                </div>
+        <UserLayout activeTab="messages">
+            <h3 className="user-content-title">Tin nhắn trò chuyện</h3>
+            <p className="user-content-subtitle" style={{ marginBottom: 'var(--space-4)' }}>Liên hệ trực tiếp với người bán hoặc người mua</p>
 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {loadingConvs ? (
-                        <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#666' }}>Đang tải hội thoại...</div>
-                    ) : conversations.length === 0 ? (
-                        <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#666' }}>Chưa có cuộc hội thoại nào.</div>
-                    ) : (
-                        conversations.map(c => {
-                            const isActive = activeConv && activeConv.id === c.id;
-                            const title = isSellerMode ? c.buyerUsername : c.shopName;
-                            const avatar = isSellerMode ? c.buyerAvatarUrl : c.shopLogoUrl;
-                            
-                            return (
-                                <div key={c.id} onClick={() => setActiveConv(c)} style={{
-                                    padding: '12px 15px',
-                                    borderBottom: '1px solid #f1f5f9',
-                                    cursor: 'pointer',
-                                    background: isActive ? '#ffe4de' : 'transparent',
-                                    display: 'flex',
-                                    gap: '12px',
-                                    alignItems: 'center',
-                                    transition: 'background 0.2s'
-                                }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fff', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <img src={avatar || 'https://via.placeholder.com/80'} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    </div>
-                                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                                        <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h4>
-                                        <p style={{ margin: 0, fontSize: '12px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lastMessage}</p>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-            </div>
-
-            {/* Chat Box window */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-                {activeConv ? (
-                    <>
-                        {/* Chat Box Header */}
-                        <div style={{ padding: '15px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f1f5f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <img src={(isSellerMode ? activeConv.buyerAvatarUrl : activeConv.shopLogoUrl) || 'https://via.placeholder.com/80'} alt="Active" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>
-                                {isSellerMode ? activeConv.buyerUsername : activeConv.shopName}
-                            </h4>
-                        </div>
-
-                        {/* Messages Area */}
-                        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {loadingMsgs ? (
-                                <div style={{ textAlign: 'center', color: '#666', fontSize: '13px' }}>Đang tải tin nhắn...</div>
-                            ) : (
-                                messages.map(m => {
-                                    const isMe = currentUser && m.senderId === currentUser.id;
-                                    return (
-                                        <div key={m.id} style={{
-                                            alignSelf: isMe ? 'flex-end' : 'flex-start',
-                                            maxWidth: '70%',
-                                            display: 'flex',
-                                            flexDirection: 'column'
-                                        }}>
-                                            <div style={{
-                                                padding: '10px 14px',
-                                                borderRadius: '12px',
-                                                background: isMe ? '#f94e30' : '#e2e8f0',
-                                                color: isMe ? 'white' : '#1e293b',
-                                                fontSize: '14px',
-                                                lineHeight: '1.4',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                            }}>
-                                                {m.content}
-                                            </div>
-                                            <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
-                                                {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                    );
-                                })
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Message Input Box */}
-                        <form onSubmit={handleSend} style={{ padding: '15px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px' }}>
-                            <input
-                                type="text"
-                                placeholder="Nhập tin nhắn..."
-                                value={typedMsg}
-                                onChange={(e) => setTypedMsg(e.target.value)}
+            <div className="chat-wrapper">
+                {/* Conversations list sidebar */}
+                <div className="chat-sidebar">
+                    <div className="chat-sidebar-header">
+                        <h4 style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 700 }}>Danh sách chat</h4>
+                        {currentUser?.role === 'SELLER' && (
+                            <button 
+                                onClick={() => {
+                                    setIsSellerMode(!isSellerMode);
+                                    setActiveConv(null);
+                                }} 
+                                className="chat-mode-toggle btn"
                                 style={{
-                                    flex: 1,
-                                    padding: '10px 15px',
-                                    border: '1px solid #cbd5e1',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none'
+                                    height: 'auto',
+                                    background: isSellerMode ? 'var(--color-success)' : 'var(--color-info)'
                                 }}
-                            />
-                            <button type="submit" style={{
-                                padding: '10px 24px',
-                                background: '#f94e30',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer'
-                            }}>
-                                Gửi
+                            >
+                                {isSellerMode ? 'Shop' : 'Mua'}
                             </button>
-                        </form>
-                    </>
-                ) : (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', flexDirection: 'column', gap: '10px' }}>
-                        <span style={{ fontSize: '48px' }}>💬</span>
-                        <p style={{ margin: 0, fontSize: '14px' }}>Chọn một cuộc hội thoại để bắt đầu nhắn tin</p>
+                        )}
                     </div>
-                )}
-            </div>
 
-        </div>
+                    <div className="conversations-scroll">
+                        {loadingConvs ? (
+                            <div className="loading-center" style={{ padding: 'var(--space-5)' }}>
+                                <div className="spinner" />
+                            </div>
+                        ) : conversations.length === 0 ? (
+                            <div style={{ padding: 'var(--space-5)', textAlign: 'center', fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-500)' }}>
+                                Chưa có cuộc hội thoại nào.
+                            </div>
+                        ) : (
+                            conversations.map(c => {
+                                const isActive = activeConv && activeConv.id === c.id;
+                                const title = isSellerMode ? c.buyerUsername : c.shopName;
+                                const avatar = isSellerMode ? c.buyerAvatarUrl : c.shopLogoUrl;
+                                
+                                return (
+                                    <div 
+                                        key={c.id} 
+                                        onClick={() => setActiveConv(c)} 
+                                        className={`conv-item ${isActive ? 'active' : ''}`}
+                                    >
+                                        <div className="conv-avatar">
+                                            <img src={getProductImage(avatar)} alt={title} onError={(e) => { e.target.src = "https://img.icons8.com/color/96/user-male-circle.png"; }} />
+                                        </div>
+                                        <div className="conv-title-row">
+                                            <h4 className="conv-name">{title}</h4>
+                                            <p className="conv-last-msg">{c.lastMessage}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* Chat Box window */}
+                <div className="chat-main-window">
+                    {activeConv ? (
+                        <>
+                            {/* Chat Box Header */}
+                            <div className="chat-header">
+                                <div className="chat-header-avatar">
+                                    <img src={getProductImage(isSellerMode ? activeConv.buyerAvatarUrl : activeConv.shopLogoUrl)} alt="Active" onError={(e) => { e.target.src = "https://img.icons8.com/color/96/user-male-circle.png"; }} />
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 700 }}>
+                                    {isSellerMode ? activeConv.buyerUsername : activeConv.shopName}
+                                </h4>
+                            </div>
+
+                            {/* Messages Area */}
+                            <div className="chat-messages-area">
+                                {loadingMsgs ? (
+                                    <div className="loading-center">
+                                        <div className="spinner" />
+                                    </div>
+                                ) : (
+                                    messages.map(m => {
+                                        const isMe = currentUser && m.senderId === currentUser.id;
+                                        return (
+                                            <div 
+                                                key={m.id} 
+                                                className={`msg-bubble-wrap ${isMe ? 'me' : 'other'}`}
+                                            >
+                                                <div className="msg-bubble">
+                                                    {m.content}
+                                                </div>
+                                                <span className="msg-timestamp">
+                                                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Message Input Box */}
+                            <form onSubmit={handleSend} className="chat-input-form">
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Nhập tin nhắn..."
+                                    value={typedMsg}
+                                    onChange={(e) => setTypedMsg(e.target.value)}
+                                />
+                                <button type="submit" className="btn btn-primary" style={{ padding: '0 var(--space-6)' }}>
+                                    Gửi
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <div className="empty-state" style={{ flex: 1 }}>
+                            <div className="empty-state-icon"><IconMessage size={48} /></div>
+                            <p className="empty-state-text" style={{ margin: 0 }}>Chọn một cuộc hội thoại từ danh sách bên trái để bắt đầu nhắn tin.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </UserLayout>
     );
 }
 

@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import userService from '../services/userService';
 import api from '../services/api';
+import UserLayout from '../components/UserLayout';
+import { useToast } from '../utils/toast';
+import { getProductImage } from '../utils/helpers';
+import { IconUpload, IconLock, IconCheck, IconWarning } from '../utils/icons';
+import './Profile.css';
 
 function Profile() {
+    const toast = useToast();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -65,11 +71,11 @@ function Profile() {
             });
             if (res.data && res.data.success) {
                 setAvatarUrl(res.data.data);
-                setProfileSuccessMsg("Tải ảnh đại diện lên thành công! Đừng quên lưu lại thông tin cá nhân của bạn.");
+                toast.success("Tải ảnh đại diện lên thành công! Đừng quên lưu lại thông tin cá nhân.");
             }
         } catch (err) {
             console.error("Avatar upload error:", err);
-            alert("Upload ảnh thất bại: " + (err.response?.data?.message || err.message));
+            toast.error("Upload ảnh thất bại: " + (err.response?.data?.message || err.message));
         } finally {
             setUploading(false);
         }
@@ -90,10 +96,12 @@ function Profile() {
             if (res && res.success && res.data) {
                 setUser(res.data);
                 setIsEditMode(false);
+                toast.success("Cập nhật thông tin cá nhân thành công!");
                 setProfileSuccessMsg("Cập nhật thông tin cá nhân thành công!");
             }
         } catch (err) {
             setError(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
         }
     };
 
@@ -104,6 +112,7 @@ function Profile() {
 
         if (newPassword !== confirmPassword) {
             setPasswordError("Xác nhận mật khẩu mới không khớp!");
+            toast.error("Xác nhận mật khẩu mới không khớp!");
             return;
         }
 
@@ -113,6 +122,7 @@ function Profile() {
                 newPassword
             });
             if (res && res.success) {
+                toast.success("Thay đổi mật khẩu thành công!");
                 setPasswordSuccessMsg("Thay đổi mật khẩu thành công!");
                 setOldPassword('');
                 setNewPassword('');
@@ -120,110 +130,120 @@ function Profile() {
             }
         } catch (err) {
             setPasswordError(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>⏳ Đang tải thông tin tài khoản...</div>;
-    if (error && !user) return <div style={{ padding: '40px', color: '#ef4444', textAlign: 'center', fontSize: '18px' }}>❌ Lỗi: {error}</div>;
+    if (loading) {
+        return (
+            <UserLayout activeTab="profile">
+                <div className="loading-center">
+                    <div className="spinner spinner-lg" />
+                </div>
+            </UserLayout>
+        );
+    }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a1a', marginBottom: '25px', borderBottom: '2px solid #f3f4f6', paddingBottom: '10px' }}>
-                Quản Lý Tài Khoản
-            </h2>
-
-            <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap' }}>
-                {/* 1. THÔNG TIN CÁ NHÂN (Bên trái) */}
-                <div style={{ flex: '2 1 500px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '25px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f3f4f6', paddingBottom: '10px' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Thông tin cá nhân</h3>
+        <UserLayout activeTab="profile">
+            <div className="profile-layout">
+                {/* 1. THÔNG TIN CÁ NHÂN */}
+                <div className="profile-card">
+                    <div className="profile-title-bar">
+                        <h3 className="user-content-title" style={{ margin: 0 }}>Hồ sơ của tôi</h3>
                         {!isEditMode && (
                             <button 
                                 onClick={() => setIsEditMode(true)}
-                                style={{ padding: '6px 15px', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+                                className="btn btn-primary btn-sm"
                             >
                                 Chỉnh sửa
                             </button>
                         )}
                     </div>
 
+                    <p className="user-content-subtitle" style={{ marginTop: '-15px' }}>
+                        Quản lý thông tin hồ sơ để bảo mật tài khoản
+                    </p>
+
                     {profileSuccessMsg && (
-                        <div style={{ padding: '12px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', borderRadius: '6px', marginBottom: '20px', fontSize: '14px' }}>
-                            ✓ {profileSuccessMsg}
+                        <div className="badge badge-success" style={{ width: '100%', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <IconCheck size={14} /> {profileSuccessMsg}
                         </div>
                     )}
                     {error && (
-                        <div style={{ padding: '12px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '6px', marginBottom: '20px', fontSize: '14px' }}>
-                            ⚠️ {error}
+                        <div className="badge badge-danger" style={{ width: '100%', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <IconWarning size={14} /> {error}
                         </div>
                     )}
 
-                    {/* Profile Form */}
                     <form onSubmit={handleProfileSubmit}>
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap' }}>
-                            <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', background: '#f3f4f6', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <img src={avatarUrl || "https://img.icons8.com/color/96/user-male-circle.png"} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {/* Avatar upload */}
+                        <div className="avatar-upload-row">
+                            <div className="avatar-preview">
+                                <img src={getProductImage(avatarUrl) || "https://img.icons8.com/color/96/user-male-circle.png"} alt="Avatar" onError={(e) => { e.target.src = "https://img.icons8.com/color/96/user-male-circle.png"; }} />
                             </div>
                             {isEditMode && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                    <label style={{ cursor: 'pointer', background: 'white', border: '1px solid #d1d5db', padding: '6px 15px', borderRadius: '4px', fontSize: '13px', fontWeight: '600', color: '#374151' }}>
-                                        {uploading ? 'Đang tải lên...' : 'Chọn ảnh mới'}
+                                <div className="avatar-upload-btn-col">
+                                    <label className="avatar-file-label">
+                                        <IconUpload size={14} style={{ marginRight: 4 }} />
+                                        {uploading ? 'Đang tải...' : 'Chọn ảnh đại diện'}
                                         <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={uploading} />
                                     </label>
-                                    <span style={{ fontSize: '11px', color: '#6b7280' }}>Chấp nhận các file định dạng ảnh</span>
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>Dung lượng file tối đa 1MB. Định dạng: JPG, PNG</span>
                                 </div>
                             )}
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Tên đăng nhập</label>
-                                <input type="text" value={user?.username || ''} disabled style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #e5e7eb', background: '#f9fafb', color: '#6b7280', fontSize: '14px' }} />
+                        {/* Text fields */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <div className="form-group">
+                                <label className="form-label">Tên đăng nhập</label>
+                                <input type="text" className="form-input" value={user?.username || ''} disabled style={{ background: 'var(--color-gray-100)', color: 'var(--color-gray-500)' }} />
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Email *</label>
+                            <div className="form-group">
+                                <label className="form-label">Email *</label>
                                 <input 
                                     type="email" 
+                                    className="form-input"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     disabled={!isEditMode} 
-                                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', background: isEditMode ? 'white' : '#f9fafb', fontSize: '14px', boxSizing: 'border-box' }}
                                     required 
                                 />
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Số điện thoại</label>
+                            <div className="form-group">
+                                <label className="form-label">Số điện thoại</label>
                                 <input 
                                     type="text" 
+                                    className="form-input"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     disabled={!isEditMode} 
-                                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', background: isEditMode ? 'white' : '#f9fafb', fontSize: '14px', boxSizing: 'border-box' }}
                                 />
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Địa chỉ giao hàng mặc định</label>
+                            <div className="form-group">
+                                <label className="form-label">Địa chỉ giao hàng mặc định</label>
                                 <textarea 
+                                    className="form-textarea"
                                     rows="2"
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     disabled={!isEditMode} 
-                                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', background: isEditMode ? 'white' : '#f9fafb', fontSize: '14px', boxSizing: 'border-box' }}
                                 />
                             </div>
 
                             {isEditMode && (
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                    <button type="submit" style={{ padding: '10px 20px', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
-                                        Lưu thay đổi
+                                <div style={{ display: 'flex', gap: '10px', marginTop: 'var(--space-2)' }}>
+                                    <button type="submit" className="btn btn-primary">
+                                        Lưu hồ sơ
                                     </button>
                                     <button 
                                         type="button" 
                                         onClick={() => { setIsEditMode(false); fetchUserProfile(); }} 
-                                        style={{ padding: '10px 20px', background: 'white', border: '1px solid #d1d5db', color: '#374151', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+                                        className="btn btn-secondary"
                                     >
                                         Hủy
                                     </button>
@@ -233,66 +253,65 @@ function Profile() {
                     </form>
                 </div>
 
-                {/* 2. ĐỔI MẬT KHẨU (Bên phải) */}
-                <div style={{ flex: '1 1 350px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '25px', height: 'fit-content' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', borderBottom: '1px solid #f3f4f6', paddingBottom: '10px' }}>
-                        Đổi mật khẩu
+                {/* 2. ĐỔI MẬT KHẨU */}
+                <div className="password-card">
+                    <h3 className="user-content-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <IconLock size={18} /> Đổi mật khẩu
                     </h3>
+                    <p className="user-content-subtitle">Bảo mật tài khoản của bạn</p>
 
                     {passwordSuccessMsg && (
-                        <div style={{ padding: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', borderRadius: '6px', marginBottom: '15px', fontSize: '13px' }}>
-                            ✓ {passwordSuccessMsg}
+                        <div className="badge badge-success" style={{ width: '100%', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <IconCheck size={14} /> {passwordSuccessMsg}
                         </div>
                     )}
                     {passwordError && (
-                        <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '6px', marginBottom: '15px', fontSize: '13px' }}>
-                            ⚠️ {passwordError}
+                        <div className="badge badge-danger" style={{ width: '100%', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <IconWarning size={14} /> {passwordError}
                         </div>
                     )}
 
                     <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Mật khẩu hiện tại *</label>
+                        <div className="form-group">
+                            <label className="form-label">Mật khẩu hiện tại *</label>
                             <input 
                                 type="password" 
+                                className="form-input"
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box' }}
                                 required 
                             />
                         </div>
 
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Mật khẩu mới *</label>
+                        <div className="form-group">
+                            <label className="form-label">Mật khẩu mới *</label>
                             <input 
                                 type="password" 
+                                className="form-input"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box' }}
                                 required 
                             />
                         </div>
 
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#4b5563', marginBottom: '5px' }}>Xác nhận mật khẩu mới *</label>
+                        <div className="form-group">
+                            <label className="form-label">Xác nhận mật khẩu mới *</label>
                             <input 
                                 type="password" 
+                                className="form-input"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box' }}
                                 required 
                             />
                         </div>
 
-                        <button type="submit" style={{ padding: '12px 0', background: '#2c3e50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'background 0.2s' }}
-                                onMouseEnter={(e) => e.target.style.background = '#1a252f'}
-                                onMouseLeave={(e) => e.target.style.background = '#2c3e50'}>
+                        <button type="submit" className="btn btn-primary btn-block" style={{ background: 'var(--color-gray-800)' }}>
                             Cập nhật mật khẩu
                         </button>
                     </form>
                 </div>
             </div>
-        </div>
+        </UserLayout>
     );
 }
 

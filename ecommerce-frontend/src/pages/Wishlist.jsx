@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import UserLayout from '../components/UserLayout';
+import ProductCard from '../components/ProductCard';
+import { useToast } from '../utils/toast';
+import { IconHeart, IconTrash, IconWarning } from '../utils/icons';
 
 function Wishlist() {
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const toast = useToast();
 
     const token = localStorage.getItem('token');
 
@@ -34,89 +39,95 @@ function Wishlist() {
             return;
         }
         fetchWishlist();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     const handleRemove = (productId, e) => {
         e.preventDefault(); // Prevent linking
+        e.stopPropagation();
         axios.delete(`http://localhost:8080/api/users/wishlist/${productId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => {
             if (res.data && res.data.success) {
                 setWishlist(prev => prev.filter(p => p.id !== productId));
+                toast.success("Đã xóa khỏi danh sách yêu thích!");
             }
         })
         .catch(err => {
             console.error(err);
-            alert('Không thể xóa sản phẩm khỏi danh sách yêu thích');
+            toast.error('Không thể xóa sản phẩm khỏi danh sách yêu thích');
         });
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Đang tải danh sách yêu thích...</div>;
-    if (error) return <div style={{ padding: '40px', color: 'red', textAlign: 'center' }}>{error}</div>;
+    if (loading) {
+        return (
+            <UserLayout activeTab="wishlist">
+                <div className="loading-center">
+                    <div className="spinner spinner-lg" />
+                </div>
+            </UserLayout>
+        );
+    }
 
     return (
-        <div style={{ fontFamily: 'system-ui, sans-serif' }}>
-            <h2 style={{ borderBottom: '2px solid #f94e30', paddingBottom: '10px', fontSize: '20px', fontWeight: 'bold' }}>
-                ❤️ Sản Phẩm Yêu Thích Của Tôi ({wishlist.length})
-            </h2>
+        <UserLayout activeTab="wishlist">
+            <h3 className="user-content-title">Sản phẩm yêu thích</h3>
+            <p className="user-content-subtitle">Danh sách các sản phẩm bạn đã lưu giữ</p>
 
-            {wishlist.length === 0 ? (
-                <div style={{ padding: '50px', textAlign: 'center', background: 'white', borderRadius: '8px', marginTop: '15px', boxShadow: 'var(--card-shadow)' }}>
-                    <p style={{ fontSize: '16px', color: '#666', margin: '0 0 15px 0' }}>Bạn chưa thích sản phẩm nào.</p>
+            {error ? (
+                <div className="badge badge-danger" style={{ width: '100%', padding: 'var(--space-3)' }}>
+                    <IconWarning size={14} /> {error}
+                </div>
+            ) : wishlist.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-state-icon"><IconHeart /></div>
+                    <h3 className="empty-state-title">Danh sách yêu thích trống</h3>
+                    <p className="empty-state-text">Hãy khám phá các sản phẩm và nhấn nút thích để lưu trữ tại đây.</p>
                     <Link to="/products">
-                        <button style={{ padding: '10px 24px', background: '#f94e30', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
-                            Khám phá sản phẩm ngay
+                        <button className="btn btn-primary">
+                            Khám phá ngay
                         </button>
                     </Link>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))', gap: '15px', marginTop: '20px' }}>
-                    {wishlist.map(prod => {
-                        const hasSale = prod.salePrice && prod.salePrice > 0;
-                        const displayPrice = hasSale ? prod.salePrice : prod.price;
-                        return (
-                            <Link key={prod.id} to={`/products/${prod.id}`} style={{ textDecoration: 'none', background: 'white', borderRadius: '6px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                                
-                                <button onClick={(e) => handleRemove(prod.id, e)} style={{
+                <div className="product-grid">
+                    {wishlist.map(prod => (
+                        <div key={prod.id} style={{ position: 'relative' }}>
+                            <ProductCard product={prod} />
+                            
+                            {/* Overlay Trash Button */}
+                            <button 
+                                onClick={(e) => handleRemove(prod.id, e)} 
+                                style={{
                                     position: 'absolute',
                                     top: '8px',
                                     right: '8px',
-                                    background: 'rgba(255,255,255,0.8)',
+                                    background: 'rgba(255,255,255,0.9)',
                                     border: 'none',
                                     borderRadius: '50%',
-                                    width: '30px',
-                                    height: '30px',
+                                    width: '32px',
+                                    height: '32px',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '16px',
-                                    color: '#ef4444',
-                                    zIndex: 2,
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                }}>
-                                    ✕
-                                </button>
-
-                                <div style={{ height: '175px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', padding: '10px' }}>
-                                    <img src={prod.imageUrl} alt={prod.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                                </div>
-                                
-                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                    <h4 style={{ fontSize: '13px', color: '#333', margin: '0 0 8px 0', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '36px' }}>
-                                        {prod.name}
-                                    </h4>
-                                    <div style={{ fontWeight: 'bold', color: '#f94e30', fontSize: '15px', marginTop: 'auto' }}>
-                                        {displayPrice.toLocaleString()} đ
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                                    color: 'var(--color-danger)',
+                                    zIndex: 10,
+                                    boxShadow: 'var(--shadow-sm)',
+                                    transition: 'background var(--transition-fast)'
+                                }}
+                                onMouseEnter={(e) => { e.target.style.background = '#fff'; }}
+                                onMouseLeave={(e) => { e.target.style.background = 'rgba(255,255,255,0.9)'; }}
+                                title="Xóa khỏi danh sách"
+                            >
+                                <IconTrash size={14} />
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
-        </div>
+        </UserLayout>
     );
 }
 

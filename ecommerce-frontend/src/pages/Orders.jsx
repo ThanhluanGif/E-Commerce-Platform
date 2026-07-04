@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import orderService from '../services/orderService';
+import UserLayout from '../components/UserLayout';
+import { formatPrice, getOrderStatusLabel } from '../utils/helpers';
+import { useToast } from '../utils/toast';
+import { IconPackage, IconTrash, IconInfo, IconWarning } from '../utils/icons';
+import './Orders.css';
 
 function Orders() {
     const [orders, setOrders] = useState([]);
+    const [filteredOrders, setFilteredOrders] = useState([]);
+    const [activeTab, setActiveTab] = useState('ALL'); // ALL, PENDING, SHIPPING, COMPLETED, CANCELLED
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const toast = useToast();
 
     const fetchOrders = () => {
         setLoading(true);
@@ -13,6 +21,7 @@ function Orders() {
             .then(res => {
                 if (res && res.success && Array.isArray(res.data)) {
                     setOrders(res.data);
+                    filterOrdersList(res.data, activeTab);
                 }
                 setLoading(false);
             })
@@ -22,114 +31,147 @@ function Orders() {
             });
     };
 
+    const filterOrdersList = (list, tab) => {
+        if (tab === 'ALL') {
+            setFilteredOrders(list);
+        } else {
+            setFilteredOrders(list.filter(o => o.status === tab));
+        }
+    };
+
     useEffect(() => {
         fetchOrders();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const handleTabChange = (tabName) => {
+        setActiveTab(tabName);
+        filterOrdersList(orders, tabName);
+    };
 
     const handleCancelOrder = async (orderId) => {
         if (window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) {
             try {
                 const res = await orderService.cancelOrder(orderId);
                 if (res && res.success) {
-                    alert("Đã hủy đơn hàng thành công!");
-                    fetchOrders(); // Reload orders list
+                    toast.success("Đã hủy đơn hàng thành công!");
+                    fetchOrders();
                 } else {
-                    alert(res?.message || "Hủy đơn hàng thất bại!");
+                    toast.error(res?.message || "Hủy đơn hàng thất bại!");
                 }
             } catch (err) {
-                alert("Lỗi: " + (err.response?.data?.message || err.message));
+                toast.error("Lỗi: " + (err.response?.data?.message || err.message));
             }
         }
     };
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'PENDING':
-                return { background: '#fef3c7', color: '#d97706', text: 'Chờ duyệt' };
-            case 'SHIPPING':
-                return { background: '#dbeafe', color: '#2563eb', text: 'Đang giao' };
-            case 'DELIVERED':
-                return { background: '#d1fae5', color: '#059669', text: 'Đã giao' };
-            case 'CANCELLED':
-                return { background: '#f3f4f6', color: '#4b5563', text: 'Đã hủy' };
-            default:
-                return { background: '#f3f4f6', color: '#1f2937', text: status };
-        }
-    };
-
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>⏳ Đang tải lịch sử đơn hàng...</div>;
-    if (error) return <div style={{ padding: '40px', color: '#ef4444', textAlign: 'center', fontSize: '18px' }}>❌ Lỗi: {error}</div>;
+    if (loading) {
+        return (
+            <UserLayout activeTab="orders">
+                <div className="loading-center">
+                    <div className="spinner spinner-lg" />
+                </div>
+            </UserLayout>
+        );
+    }
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a1a', marginBottom: '25px', borderBottom: '2px solid #f3f4f6', paddingBottom: '10px' }}>
-                Đơn Hàng Của Bạn
-            </h2>
+        <UserLayout activeTab="orders">
+            <h3 className="user-content-title">Đơn hàng của tôi</h3>
+            <p className="user-content-subtitle">Quản lý và theo dõi lịch sử mua hàng</p>
 
-            {orders.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '50px 20px', background: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
-                    <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>Bạn chưa thực hiện bất kỳ đơn đặt hàng nào.</p>
-                    <Link to="/products" style={{ textDecoration: 'none', display: 'inline-block', marginTop: '15px' }}>
-                        <button style={{ padding: '10px 20px', background: '#3643ba', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+            {/* Tabs Filter */}
+            <div className="order-filter-tabs">
+                {[
+                    { key: 'ALL', label: 'Tất cả' },
+                    { key: 'PENDING', label: 'Chờ xác nhận' },
+                    { key: 'SHIPPING', label: 'Đang giao' },
+                    { key: 'DELIVERED', label: 'Đã giao' },
+                    { key: 'COMPLETED', label: 'Hoàn thành' },
+                    { key: 'CANCELLED', label: 'Đã hủy' }
+                ].map(tab => (
+                    <div 
+                        key={tab.key}
+                        className={`order-filter-tab ${activeTab === tab.key ? 'active' : ''}`}
+                        onClick={() => handleTabChange(tab.key)}
+                    >
+                        {tab.label}
+                    </div>
+                ))}
+            </div>
+
+            {error && (
+                <div className="badge badge-danger" style={{ width: '100%', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)', display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <IconWarning size={14} /> Lỗi tải đơn hàng: {error}
+                </div>
+            )}
+
+            {filteredOrders.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-state-icon"><IconPackage /></div>
+                    <h3 className="empty-state-title">Chưa có đơn hàng nào</h3>
+                    <p className="empty-state-text">Bạn chưa có đơn hàng nào thuộc trạng thái này.</p>
+                    <Link to="/products">
+                        <button className="btn btn-primary">
                             Mua sắm ngay
                         </button>
                     </Link>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {orders.map((order) => {
-                        const statusStyle = getStatusStyle(order.status);
+                <div className="orders-list">
+                    {filteredOrders.map((order) => {
+                        const statusObj = getOrderStatusLabel(order.status);
                         const dateStr = new Date(order.createdAt).toLocaleDateString('vi-VN', {
-                            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
                         });
 
                         return (
-                            <div key={order.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', borderBottom: '1px solid #f3f4f6', paddingBottom: '15px', marginBottom: '15px' }}>
-                                    <div>
-                                        <span style={{ fontSize: '12px', color: '#9ca3af', display: 'block' }}>Mã đơn hàng</span>
-                                        <strong style={{ fontSize: '16px', color: '#111827' }}>{order.orderCode}</strong>
+                            <div key={order.id} className="order-group-card">
+                                <div className="order-group-header">
+                                    <div className="order-code-block">
+                                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)' }}>Mã đơn hàng</span>
+                                        <strong style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-gray-900)' }}>{order.orderCode}</strong>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <span style={{ fontSize: '12px', color: '#9ca3af', display: 'block' }}>Ngày đặt</span>
-                                        <span style={{ fontSize: '14px', color: '#4b5563' }}>{dateStr}</span>
+                                    <div className="order-meta-info">
+                                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', display: 'block' }}>Ngày đặt</span>
+                                        <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-700)' }}>{dateStr}</span>
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                                    {/* Order Items description summary */}
-                                    <div style={{ flex: '1' }}>
+                                <div className="order-group-body">
+                                    <div className="order-items-summary">
                                         {order.items && order.items.length > 0 ? (
-                                            <div style={{ fontSize: '14px', color: '#4b5563' }}>
+                                            <div style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-gray-700)' }}>
                                                 {order.items[0].productName} {order.items.length > 1 && `và ${order.items.length - 1} sản phẩm khác...`}
                                             </div>
                                         ) : (
-                                            <div style={{ fontSize: '14px', color: '#9ca3af' }}>Không tìm thấy chi tiết sản phẩm</div>
+                                            <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-gray-400)' }}>Không tìm thấy chi tiết sản phẩm</div>
                                         )}
-                                        <div style={{ display: 'inline-block', marginTop: '10px', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', background: statusStyle.background, color: statusStyle.color }}>
-                                            {statusStyle.text}
-                                        </div>
+                                        <span className={`badge ${statusObj.className}`} style={{ marginTop: 'var(--space-2)' }}>
+                                            {statusObj.label}
+                                        </span>
                                     </div>
 
                                     {/* Action buttons and prices */}
-                                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div className="order-price-details">
                                         <div style={{ textAlign: 'right', minWidth: '150px' }}>
-                                            <span style={{ fontSize: '12px', color: '#9ca3af', display: 'block' }}>Tổng tiền</span>
-                                            <strong style={{ fontSize: '18px', color: '#ef4444' }}>{order.totalPrice.toLocaleString('vi-VN')} đ</strong>
+                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', display: 'block' }}>Tổng tiền</span>
+                                            <strong style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-primary)' }}>{formatPrice(order.totalPrice)}</strong>
                                         </div>
 
-                                        <Link to={`/orders/${order.id}`} style={{ textDecoration: 'none' }}>
-                                            <button style={{ padding: '8px 16px', background: 'white', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}>
-                                                Chi tiết
+                                        <Link to={`/orders/${order.id}`}>
+                                            <button className="btn btn-secondary btn-sm" style={{ display: 'flex', gap: 4 }}>
+                                                <IconInfo size={14} /> Chi tiết
                                             </button>
                                         </Link>
 
                                         {order.status === 'PENDING' && (
                                             <button 
                                                 onClick={() => handleCancelOrder(order.id)}
-                                                style={{ padding: '8px 16px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '4px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#ef4444' }}
+                                                className="btn btn-danger btn-sm"
+                                                style={{ display: 'flex', gap: 4 }}
                                             >
-                                                Hủy đơn
+                                                <IconTrash size={14} /> Hủy đơn
                                             </button>
                                         )}
                                     </div>
@@ -139,7 +181,7 @@ function Orders() {
                     })}
                 </div>
             )}
-        </div>
+        </UserLayout>
     );
 }
 

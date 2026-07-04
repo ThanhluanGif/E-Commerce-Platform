@@ -54,6 +54,7 @@ export { LuDownload as IconDownload } from 'react-icons/lu';
 export { LuUpload as IconUpload } from 'react-icons/lu';
 export { LuEye as IconEye } from 'react-icons/lu';
 export { LuEyeOff as IconEyeOff } from 'react-icons/lu';
+export { LuLock as IconLock } from 'react-icons/lu';
 
 // --- Contact & Info ---
 export { LuMapPin as IconMapPin } from 'react-icons/lu';
