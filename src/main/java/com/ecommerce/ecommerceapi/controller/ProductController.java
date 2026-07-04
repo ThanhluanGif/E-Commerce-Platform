@@ -6,6 +6,7 @@ import com.ecommerce.ecommerceapi.dto.ProductImageDTO;
 import com.ecommerce.ecommerceapi.dto.ProductVariantDTO;
 import com.ecommerce.ecommerceapi.entity.Category;
 import com.ecommerce.ecommerceapi.entity.Product;
+import com.ecommerce.ecommerceapi.entity.ProductVariant;
 import com.ecommerce.ecommerceapi.service.CategoryService;
 import com.ecommerce.ecommerceapi.service.ProductService;
 import jakarta.validation.Valid;

@@ -6,6 +6,7 @@ import com.ecommerce.ecommerceapi.dto.OrderItemDTO;
 import com.ecommerce.ecommerceapi.dto.OrderRequest;
 import com.ecommerce.ecommerceapi.entity.Order;
 import com.ecommerce.ecommerceapi.entity.OrderStatus;
+import com.ecommerce.ecommerceapi.entity.ProductVariant;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.service.OrderService;
 import jakarta.validation.Valid;

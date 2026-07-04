@@ -5,6 +5,7 @@ import com.ecommerce.ecommerceapi.dto.OrderDTO;
 import com.ecommerce.ecommerceapi.dto.OrderItemDTO;
 import com.ecommerce.ecommerceapi.entity.Order;
 import com.ecommerce.ecommerceapi.entity.OrderStatus;
+import com.ecommerce.ecommerceapi.entity.ProductVariant;
 import com.ecommerce.ecommerceapi.entity.Shop;
 import com.ecommerce.ecommerceapi.entity.User;
 import com.ecommerce.ecommerceapi.exception.BadRequestException;
