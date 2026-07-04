@@ -39,7 +39,7 @@ function Navbar() {
                 color: 'rgba(255,255,255,0.9)' 
             }}>
                 <div style={{ display: 'flex', gap: '15px' }}>
-                    <span style={{ cursor: 'pointer' }}>Kênh Người Bán</span>
+                    <Link to="/seller" style={{ color: 'white', textDecoration: 'none' }}>Kênh Người Bán</Link>
                     <span style={{ cursor: 'pointer' }}>Tải ứng dụng</span>
                     <span style={{ cursor: 'pointer' }}>Kết nối 🅵 🅸</span>
                 </div>
@@ -50,6 +50,12 @@ function Navbar() {
                     
                     {isAuthenticated ? (
                         <div style={{ display: 'flex', gap: '15px', alignItems: 'center', fontWeight: 'bold' }}>
+                            <Link to="/messages" style={{ color: 'white', textDecoration: 'none' }}>
+                                💬 Chat
+                            </Link>
+                            <Link to="/wishlist" style={{ color: 'white', textDecoration: 'none' }}>
+                                ❤️ Yêu thích
+                            </Link>
                             <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>
                                 👤 {username}
                             </Link>

@@ -42,7 +42,7 @@ public class ProductService {
     }
 
     // Lọc, tìm kiếm và phân trang sản phẩm
-    public Page<Product> filterProducts(String name, Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice, Boolean active, Pageable pageable) {
-        return productRepository.filterProducts(name, categoryId, minPrice, maxPrice, active, pageable);
+    public Page<Product> filterProducts(String name, Integer categoryId, Integer shopId, BigDecimal minPrice, BigDecimal maxPrice, Boolean active, Pageable pageable) {
+        return productRepository.filterProducts(name, categoryId, shopId, minPrice, maxPrice, active, pageable);
     }
 }

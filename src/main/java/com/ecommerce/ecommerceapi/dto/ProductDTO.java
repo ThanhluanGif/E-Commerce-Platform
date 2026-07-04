@@ -26,5 +26,7 @@ public class ProductDTO {
     private LocalDateTime createdAt;
     private Integer categoryId;
     private String categoryName;
+    private Integer shopId;
+    private String shopName;
     private List<ProductImageDTO> images;
 }

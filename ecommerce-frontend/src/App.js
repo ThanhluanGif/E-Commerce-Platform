@@ -14,6 +14,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import PaymentSimulation from './pages/PaymentSimulation';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ShopPage from './pages/ShopPage';
+import Wishlist from './pages/Wishlist';
+import Messages from './pages/Messages';
+import SellerDashboard from './pages/SellerDashboard';
+import FlashSale from './pages/FlashSale';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
@@ -29,6 +34,8 @@ function App() {
                         <Route path="/products/:id" element={<ProductDetail />} />
                         <Route path="/categories" element={<Categories />} />
                         <Route path="/cart" element={<Cart />} />
+                        <Route path="/shop/:slug" element={<ShopPage />} />
+                        <Route path="/flash-sale" element={<FlashSale />} />
                         
                         {/* Protected Routes */}
                         <Route element={<PrivateRoute />}>
@@ -38,6 +45,9 @@ function App() {
                             <Route path="/orders/:id" element={<OrderDetail />} />
                             <Route path="/profile" element={<Profile />} />
                             <Route path="/payment-simulation" element={<PaymentSimulation />} />
+                            <Route path="/wishlist" element={<Wishlist />} />
+                            <Route path="/messages" element={<Messages />} />
+                            <Route path="/seller" element={<SellerDashboard />} />
                         </Route>
 
                         {/* Admin Routes */}

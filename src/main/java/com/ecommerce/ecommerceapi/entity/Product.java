@@ -44,6 +44,11 @@ public class Product {
     @JoinColumn(name = "category_id", nullable = false) // Tự động ánh xạ cột category_id dưới database
     private Category category;
 
+    // Nhiều sản phẩm thuộc về một gian hàng (Shop)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
     @Column(name = "sale_price", precision = 10, scale = 2)
     private BigDecimal salePrice;
 

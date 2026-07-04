@@ -5,8 +5,15 @@ import com.ecommerce.ecommerceapi.dto.ProductDTO;
 import com.ecommerce.ecommerceapi.dto.ProductImageDTO;
 import com.ecommerce.ecommerceapi.entity.Category;
 import com.ecommerce.ecommerceapi.entity.Product;
+import com.ecommerce.ecommerceapi.entity.Shop;
+import com.ecommerce.ecommerceapi.entity.User;
+import com.ecommerce.ecommerceapi.exception.BadRequestException;
+import com.ecommerce.ecommerceapi.exception.ResourceNotFoundException;
+import com.ecommerce.ecommerceapi.repository.ProductRepository;
+import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.service.CategoryService;
 import com.ecommerce.ecommerceapi.service.ProductService;
+import com.ecommerce.ecommerceapi.service.ShopService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,56 +22,62 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products")
-public class ProductController {
+@RequestMapping("/api/seller/products")
+public class SellerProductController {
 
     @Autowired
     private ProductService productService;
 
     @Autowired
+    private ShopService shopService;
+
+    @Autowired
     private CategoryService categoryService;
 
-    // 1. GET: Lấy toàn bộ sản phẩm có phân trang, tìm kiếm và lọc (http://localhost:8080/api/products)
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    private Integer getUserId(Principal principal) {
+        if (principal == null) return null;
+        return userRepository.findByUsername(principal.getName())
+                .map(User::getId)
+                .orElse(null);
+    }
+
+    private Shop getSellerShop(Principal principal) {
+        Integer userId = getUserId(principal);
+        if (userId == null) {
+            throw new BadRequestException("Chưa đăng nhập!");
+        }
+        return shopService.getShopByUserId(userId);
+    }
+
+    // 1. GET: Lấy toàn bộ sản phẩm của shop tôi
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ProductDTO>>> getAll(
+    public ResponseEntity<ApiResponse<Page<ProductDTO>>> getMyProducts(
+            Principal principal,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Integer categoryId,
-            @RequestParam(required = false) Integer shopId,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Boolean active,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<ProductDTO> products = productService.filterProducts(name, categoryId, shopId, minPrice, maxPrice, active, pageable)
+        Shop shop = getSellerShop(principal);
+        Page<ProductDTO> products = productRepository.filterByShop(shop.getId(), name, pageable)
                 .map(this::convertToDTO);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách sản phẩm thành công!", products));
     }
 
-    // Lấy sản phẩm theo danh mục ID
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<ApiResponse<List<ProductDTO>>> getByCategoryId(@PathVariable Integer categoryId) {
-        List<ProductDTO> products = productService.getProductsByCategoryId(categoryId).stream()
-                .map(this::convertToDTO)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách sản phẩm theo danh mục thành công!", products));
-    }
-
-    // 2. GET: Lấy chi tiết 1 sản phẩm (http://localhost:8080/api/products/{id})
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDTO>> getById(@PathVariable Integer id) {
-        Product product = productService.getProductById(id);
-        return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết sản phẩm thành công!", convertToDTO(product)));
-    }
-
-    // 3. POST: Thêm mới sản phẩm
+    // 2. POST: Đăng sản phẩm mới cho shop tôi
     @PostMapping
-    public ResponseEntity<ApiResponse<ProductDTO>> create(@Valid @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ApiResponse<ProductDTO>> createProduct(Principal principal, @Valid @RequestBody ProductDTO productDTO) {
+        Shop shop = getSellerShop(principal);
         Category category = categoryService.getCategoryById(productDTO.getCategoryId());
+        
         Product product = Product.builder()
                 .name(productDTO.getName())
                 .slug(productDTO.getSlug())
@@ -75,17 +88,25 @@ public class ProductController {
                 .imageUrl(productDTO.getImageUrl())
                 .active(productDTO.getActive() != null ? productDTO.getActive() : true)
                 .category(category)
+                .shop(shop) // Gán shop của seller
                 .build();
+                
         Product savedProduct = productService.saveProduct(product);
-        return ResponseEntity.ok(ApiResponse.success("Tạo sản phẩm thành công!", convertToDTO(savedProduct)));
+        return ResponseEntity.ok(ApiResponse.success("Đăng sản phẩm thành công!", convertToDTO(savedProduct)));
     }
 
-    // 4. PUT: Cập nhật sản phẩm
+    // 3. PUT: Cập nhật sản phẩm của shop tôi
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDTO>> update(@PathVariable Integer id, @Valid @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ApiResponse<ProductDTO>> updateProduct(Principal principal, @PathVariable Integer id, @Valid @RequestBody ProductDTO productDTO) {
+        Shop shop = getSellerShop(principal);
         Product product = productService.getProductById(id);
+        
+        if (product.getShop() == null || !product.getShop().getId().equals(shop.getId())) {
+            throw new BadRequestException("Bạn không có quyền chỉnh sửa sản phẩm này!");
+        }
+        
         Category category = categoryService.getCategoryById(productDTO.getCategoryId());
-
+        
         product.setName(productDTO.getName());
         product.setSlug(productDTO.getSlug());
         product.setDescription(productDTO.getDescription());
@@ -95,14 +116,21 @@ public class ProductController {
         product.setImageUrl(productDTO.getImageUrl());
         product.setActive(productDTO.getActive() != null ? productDTO.getActive() : true);
         product.setCategory(category);
-
+        
         Product savedProduct = productService.saveProduct(product);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật sản phẩm thành công!", convertToDTO(savedProduct)));
     }
 
-    // 5. DELETE: Xóa sản phẩm
+    // 4. DELETE: Xóa sản phẩm của shop tôi
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(Principal principal, @PathVariable Integer id) {
+        Shop shop = getSellerShop(principal);
+        Product product = productService.getProductById(id);
+        
+        if (product.getShop() == null || !product.getShop().getId().equals(shop.getId())) {
+            throw new BadRequestException("Bạn không có quyền xóa sản phẩm này!");
+        }
+        
         productService.deleteProduct(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công!"));
     }

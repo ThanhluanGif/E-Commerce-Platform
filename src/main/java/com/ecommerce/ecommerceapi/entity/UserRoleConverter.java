@@ -6,7 +6,9 @@ public class UserRoleConverter implements AttributeConverter<UserRole, String> {
     @Override
     public String convertToDatabaseColumn(UserRole attribute) {
         if (attribute == null) return "Customer";
-        return attribute == UserRole.ADMIN ? "Admin" : "Customer";
+        if (attribute == UserRole.ADMIN) return "Admin";
+        if (attribute == UserRole.SELLER) return "Seller";
+        return "Customer";
     }
 
     @Override
@@ -16,7 +18,9 @@ public class UserRoleConverter implements AttributeConverter<UserRole, String> {
         String clean = dbData.trim().toUpperCase();
         if (clean.contains("ADMIN")) {
             return UserRole.ADMIN;
+        } else if (clean.contains("SELLER")) {
+            return UserRole.SELLER;
         }
-        return UserRole.CUSTOMER; // Mặc định tất cả các quyền khác (USER, CUSTOMER, ROLE_USER, vv.) về CUSTOMER để tránh lỗi khởi chạy
+        return UserRole.CUSTOMER; // Mặc định tất cả các quyền khác về CUSTOMER
     }
 }
