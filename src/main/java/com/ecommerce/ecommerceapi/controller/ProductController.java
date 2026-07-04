@@ -3,6 +3,7 @@ package com.ecommerce.ecommerceapi.controller;
 import com.ecommerce.ecommerceapi.dto.ApiResponse;
 import com.ecommerce.ecommerceapi.dto.ProductDTO;
 import com.ecommerce.ecommerceapi.dto.ProductImageDTO;
+import com.ecommerce.ecommerceapi.dto.ProductVariantDTO;
 import com.ecommerce.ecommerceapi.entity.Category;
 import com.ecommerce.ecommerceapi.entity.Product;
 import com.ecommerce.ecommerceapi.service.CategoryService;
@@ -119,6 +120,22 @@ public class ProductController {
                     .toList();
         }
 
+        List<ProductVariantDTO> variantDTOs = null;
+        if (product.getVariants() != null) {
+            variantDTOs = product.getVariants().stream()
+                    .map(v -> ProductVariantDTO.builder()
+                            .id(v.getId())
+                            .productId(product.getId())
+                            .sku(v.getSku())
+                            .name(v.getName())
+                            .price(v.getPrice())
+                            .salePrice(v.getSalePrice())
+                            .stockQuantity(v.getStockQuantity())
+                            .imageUrl(v.getImageUrl())
+                            .build())
+                    .toList();
+        }
+
         return ProductDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -135,6 +152,7 @@ public class ProductController {
                 .shopId(product.getShop() != null ? product.getShop().getId() : null)
                 .shopName(product.getShop() != null ? product.getShop().getName() : null)
                 .images(imageDTOs)
+                .variants(variantDTOs)
                 .build();
     }
 }

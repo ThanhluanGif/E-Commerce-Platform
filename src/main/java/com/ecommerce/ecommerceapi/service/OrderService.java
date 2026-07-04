@@ -7,6 +7,7 @@ import com.ecommerce.ecommerceapi.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerceapi.repository.OrderItemRepository;
 import com.ecommerce.ecommerceapi.repository.OrderRepository;
 import com.ecommerce.ecommerceapi.repository.ProductRepository;
+import com.ecommerce.ecommerceapi.repository.ProductVariantRepository;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,9 @@ public class OrderService {
     private ProductRepository productRepository;
 
     @Autowired
+    private ProductVariantRepository productVariantRepository;
+
+    @Autowired
     private CartService cartService;
 
     public Order createOrder(Integer userId, OrderRequest request) {
@@ -64,17 +68,35 @@ public class OrderService {
 
         for (CartItem cartItem : cartItems) {
             Product product = cartItem.getProduct();
-            if (product.getStockQuantity() < cartItem.getQuantity()) {
-                throw new BadRequestException("Sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + product.getStockQuantity() + ")!");
+            ProductVariant variant = cartItem.getVariant();
+            
+            if (variant != null) {
+                if (variant.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Biến thể '" + variant.getName() + "' của sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + variant.getStockQuantity() + ")!");
+                }
+                
+                // Deduct variant stock
+                variant.setStockQuantity(variant.getStockQuantity() - cartItem.getQuantity());
+                productVariantRepository.save(variant);
+            } else {
+                if (product.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + product.getStockQuantity() + ")!");
+                }
+                
+                // Deduct product stock
+                product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
+                productRepository.save(product);
             }
-
-            // Deduct stock
-            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
-            productRepository.save(product);
 
             BigDecimal priceAtPurchase = product.getSalePrice() != null && product.getSalePrice().compareTo(BigDecimal.ZERO) > 0
                     ? product.getSalePrice()
                     : product.getPrice();
+                    
+            if (variant != null) {
+                BigDecimal vPrice = variant.getPrice() != null ? variant.getPrice() : product.getPrice();
+                BigDecimal vSalePrice = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getPrice();
+                priceAtPurchase = vSalePrice != null && vSalePrice.compareTo(BigDecimal.ZERO) > 0 ? vSalePrice : vPrice;
+            }
 
             BigDecimal itemTotal = priceAtPurchase.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
             totalPrice = totalPrice.add(itemTotal);
@@ -82,6 +104,7 @@ public class OrderService {
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(product)
+                    .variant(variant)
                     .quantity(cartItem.getQuantity())
                     .priceAtPurchase(priceAtPurchase)
                     .build();

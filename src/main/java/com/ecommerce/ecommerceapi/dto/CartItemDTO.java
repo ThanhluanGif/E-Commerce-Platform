@@ -20,4 +20,6 @@ public class CartItemDTO {
     private BigDecimal productPrice;
     private BigDecimal productSalePrice;
     private Integer productStockQuantity;
+    private Integer variantId;
+    private String variantName;
 }

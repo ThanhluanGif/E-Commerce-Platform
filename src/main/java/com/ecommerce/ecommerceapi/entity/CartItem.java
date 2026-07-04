@@ -29,4 +29,9 @@ public class CartItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false) // tự ánh xạ cột product_id dưới database
     private Product product;
+
+    // 3. Nhiều dòng cart_item có thể trỏ đến 1 ProductVariant
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant;
 }

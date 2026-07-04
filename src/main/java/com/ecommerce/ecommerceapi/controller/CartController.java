@@ -5,6 +5,7 @@ import com.ecommerce.ecommerceapi.dto.CartItemDTO;
 import com.ecommerce.ecommerceapi.dto.CartItemRequest;
 import com.ecommerce.ecommerceapi.entity.CartItem;
 import com.ecommerce.ecommerceapi.entity.Product;
+import com.ecommerce.ecommerceapi.entity.ProductVariant;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.service.CartService;
 import jakarta.validation.Valid;
@@ -51,7 +52,7 @@ public class CartController {
             Principal principal
     ) {
         Integer userId = getUserId(principal);
-        CartItem savedItem = cartService.addItemToCart(userId, request.getProductId(), request.getQuantity());
+        CartItem savedItem = cartService.addItemToCart(userId, request.getProductId(), request.getVariantId(), request.getQuantity());
         return ResponseEntity.ok(ApiResponse.success("Thêm sản phẩm vào giỏ hàng thành công!", convertToDTO(savedItem)));
     }
 
@@ -96,15 +97,32 @@ public class CartController {
 
     private CartItemDTO convertToDTO(CartItem item) {
         Product product = item.getProduct();
+        java.math.BigDecimal price = product.getPrice();
+        java.math.BigDecimal salePrice = product.getSalePrice();
+        Integer stock = product.getStockQuantity();
+        String imageUrl = product.getImageUrl();
+
+        if (item.getVariant() != null) {
+            ProductVariant variant = item.getVariant();
+            if (variant.getPrice() != null) price = variant.getPrice();
+            if (variant.getSalePrice() != null) salePrice = variant.getSalePrice();
+            stock = variant.getStockQuantity();
+            if (variant.getImageUrl() != null && !variant.getImageUrl().trim().isEmpty()) {
+                imageUrl = variant.getImageUrl();
+            }
+        }
+
         return CartItemDTO.builder()
                 .id(item.getId())
                 .quantity(item.getQuantity())
                 .productId(product.getId())
                 .productName(product.getName())
-                .productImageUrl(product.getImageUrl())
-                .productPrice(product.getPrice())
-                .productSalePrice(product.getSalePrice())
-                .productStockQuantity(product.getStockQuantity())
+                .productImageUrl(imageUrl)
+                .productPrice(price)
+                .productSalePrice(salePrice)
+                .productStockQuantity(stock)
+                .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
+                .variantName(item.getVariant() != null ? item.getVariant().getName() : null)
                 .build();
     }
 }

@@ -29,4 +29,5 @@ public class ProductDTO {
     private Integer shopId;
     private String shopName;
     private List<ProductImageDTO> images;
+    private List<ProductVariantDTO> variants;
 }

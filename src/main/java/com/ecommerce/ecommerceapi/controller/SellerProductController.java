@@ -3,13 +3,16 @@ package com.ecommerce.ecommerceapi.controller;
 import com.ecommerce.ecommerceapi.dto.ApiResponse;
 import com.ecommerce.ecommerceapi.dto.ProductDTO;
 import com.ecommerce.ecommerceapi.dto.ProductImageDTO;
+import com.ecommerce.ecommerceapi.dto.ProductVariantDTO;
 import com.ecommerce.ecommerceapi.entity.Category;
 import com.ecommerce.ecommerceapi.entity.Product;
+import com.ecommerce.ecommerceapi.entity.ProductVariant;
 import com.ecommerce.ecommerceapi.entity.Shop;
 import com.ecommerce.ecommerceapi.entity.User;
 import com.ecommerce.ecommerceapi.exception.BadRequestException;
 import com.ecommerce.ecommerceapi.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerceapi.repository.ProductRepository;
+import com.ecommerce.ecommerceapi.repository.ProductVariantRepository;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.service.CategoryService;
 import com.ecommerce.ecommerceapi.service.ProductService;
@@ -43,6 +46,9 @@ public class SellerProductController {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ProductVariantRepository productVariantRepository;
 
     private Integer getUserId(Principal principal) {
         if (principal == null) return null;
@@ -135,6 +141,105 @@ public class SellerProductController {
         return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công!"));
     }
 
+    // 5. POST: Thêm biến thể cho sản phẩm
+    @PostMapping("/{productId}/variants")
+    public ResponseEntity<ApiResponse<ProductVariantDTO>> createVariant(
+            Principal principal,
+            @PathVariable Integer productId,
+            @Valid @RequestBody ProductVariantDTO variantDTO
+    ) {
+        Shop shop = getSellerShop(principal);
+        Product product = productService.getProductById(productId);
+        
+        if (product.getShop() == null || !product.getShop().getId().equals(shop.getId())) {
+            throw new BadRequestException("Bạn không có quyền quản lý sản phẩm này!");
+        }
+
+        ProductVariant variant = ProductVariant.builder()
+                .product(product)
+                .sku(variantDTO.getSku())
+                .name(variantDTO.getName())
+                .price(variantDTO.getPrice())
+                .salePrice(variantDTO.getSalePrice())
+                .stockQuantity(variantDTO.getStockQuantity())
+                .imageUrl(variantDTO.getImageUrl())
+                .build();
+
+        ProductVariant saved = productVariantRepository.save(variant);
+        return ResponseEntity.ok(ApiResponse.success("Thêm biến thể thành công!", convertVariantToDTO(saved)));
+    }
+
+    // 6. PUT: Cập nhật biến thể sản phẩm
+    @PutMapping("/{productId}/variants/{variantId}")
+    public ResponseEntity<ApiResponse<ProductVariantDTO>> updateVariant(
+            Principal principal,
+            @PathVariable Integer productId,
+            @PathVariable Integer variantId,
+            @Valid @RequestBody ProductVariantDTO variantDTO
+    ) {
+        Shop shop = getSellerShop(principal);
+        Product product = productService.getProductById(productId);
+        
+        if (product.getShop() == null || !product.getShop().getId().equals(shop.getId())) {
+            throw new BadRequestException("Bạn không có quyền quản lý sản phẩm này!");
+        }
+
+        ProductVariant variant = productVariantRepository.findById(variantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm!"));
+
+        if (!variant.getProduct().getId().equals(productId)) {
+            throw new BadRequestException("Biến thể này không thuộc về sản phẩm đã chọn!");
+        }
+
+        variant.setSku(variantDTO.getSku());
+        variant.setName(variantDTO.getName());
+        variant.setPrice(variantDTO.getPrice());
+        variant.setSalePrice(variantDTO.getSalePrice());
+        variant.setStockQuantity(variantDTO.getStockQuantity());
+        variant.setImageUrl(variantDTO.getImageUrl());
+
+        ProductVariant saved = productVariantRepository.save(variant);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật biến thể thành công!", convertVariantToDTO(saved)));
+    }
+
+    // 7. DELETE: Xóa biến thể sản phẩm
+    @DeleteMapping("/{productId}/variants/{variantId}")
+    public ResponseEntity<ApiResponse<Void>> deleteVariant(
+            Principal principal,
+            @PathVariable Integer productId,
+            @PathVariable Integer variantId
+    ) {
+        Shop shop = getSellerShop(principal);
+        Product product = productService.getProductById(productId);
+        
+        if (product.getShop() == null || !product.getShop().getId().equals(shop.getId())) {
+            throw new BadRequestException("Bạn không có quyền quản lý sản phẩm này!");
+        }
+
+        ProductVariant variant = productVariantRepository.findById(variantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm!"));
+
+        if (!variant.getProduct().getId().equals(productId)) {
+            throw new BadRequestException("Biến thể này không thuộc về sản phẩm đã chọn!");
+        }
+
+        productVariantRepository.delete(variant);
+        return ResponseEntity.ok(ApiResponse.success("Xóa biến thể thành công!"));
+    }
+
+    private ProductVariantDTO convertVariantToDTO(ProductVariant variant) {
+        return ProductVariantDTO.builder()
+                .id(variant.getId())
+                .productId(variant.getProduct().getId())
+                .sku(variant.getSku())
+                .name(variant.getName())
+                .price(variant.getPrice())
+                .salePrice(variant.getSalePrice())
+                .stockQuantity(variant.getStockQuantity())
+                .imageUrl(variant.getImageUrl())
+                .build();
+    }
+
     private ProductDTO convertToDTO(Product product) {
         List<ProductImageDTO> imageDTOs = null;
         if (product.getImages() != null) {
@@ -143,6 +248,22 @@ public class SellerProductController {
                             .id(img.getId())
                             .imageUrl(img.getImageUrl())
                             .sortOrder(img.getSortOrder())
+                            .build())
+                    .toList();
+        }
+
+        List<ProductVariantDTO> variantDTOs = null;
+        if (product.getVariants() != null) {
+            variantDTOs = product.getVariants().stream()
+                    .map(v -> ProductVariantDTO.builder()
+                            .id(v.getId())
+                            .productId(product.getId())
+                            .sku(v.getSku())
+                            .name(v.getName())
+                            .price(v.getPrice())
+                            .salePrice(v.getSalePrice())
+                            .stockQuantity(v.getStockQuantity())
+                            .imageUrl(v.getImageUrl())
                             .build())
                     .toList();
         }
@@ -163,6 +284,7 @@ public class SellerProductController {
                 .shopId(product.getShop() != null ? product.getShop().getId() : null)
                 .shopName(product.getShop() != null ? product.getShop().getName() : null)
                 .images(imageDTOs)
+                .variants(variantDTOs)
                 .build();
     }
 }

@@ -120,9 +120,13 @@ public class OrderController {
                             .id(item.getId())
                             .productId(item.getProduct().getId())
                             .productName(item.getProduct().getName())
-                            .productImageUrl(item.getProduct().getImageUrl())
+                            .productImageUrl(item.getVariant() != null && item.getVariant().getImageUrl() != null && !item.getVariant().getImageUrl().trim().isEmpty()
+                                    ? item.getVariant().getImageUrl()
+                                    : item.getProduct().getImageUrl())
                             .quantity(item.getQuantity())
                             .priceAtPurchase(item.getPriceAtPurchase())
+                            .variantId(item.getVariant() != null ? item.getVariant().getId() : null)
+                            .variantName(item.getVariant() != null ? item.getVariant().getName() : null)
                             .build())
                     .toList();
         }

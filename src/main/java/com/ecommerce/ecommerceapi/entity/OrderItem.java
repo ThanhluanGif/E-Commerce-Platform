@@ -32,4 +32,9 @@ public class OrderItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false) // Ánh xạ cột product_id dưới database
     private Product product;
+
+    // 3. Nhiều chi tiết đơn hàng trỏ đến 1 Biến thể sản phẩm (tùy chọn)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant;
 }
