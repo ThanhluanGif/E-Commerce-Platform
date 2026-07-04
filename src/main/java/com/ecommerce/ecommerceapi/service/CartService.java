@@ -131,7 +131,7 @@ public class CartService {
         if (guestItems == null || guestItems.isEmpty()) return;
         for (com.ecommerce.ecommerceapi.dto.CartItemDTO item : guestItems) {
             try {
-                addItemToCart(userId, item.getProductId(), item.getQuantity());
+                addItemToCart(userId, item.getProductId(), item.getVariantId(), item.getQuantity());
             } catch (Exception e) {
                 // Ignore items that fail merge (e.g. out of stock or deleted product) so user login succeeds
             }
