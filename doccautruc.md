@@ -779,3 +779,42 @@ ecommerce-frontend/src/
 > - Mỗi Phase mới đều kế thừa và mở rộng từ code hiện có, **không phá vỡ cấu trúc cũ**  
 > - Ưu tiên **Phase 7 (Seller Center)** và **Phase 8 (Voucher & Flash Sale)** trước vì đây là nghiệp vụ cốt lõi Shopee còn thiếu hoàn toàn  
 > - Tham khảo chi tiết tiến trình hoàn thành các Phase 1–6 trong file `doc.md`
+
+---
+
+## 7. Kế Hoạch Triển Khai Chi Tiết Các Phần Còn Lại (Phase 10)
+
+### 🔖 Task 1: Wishlist — Gợi Ý Flash Sale (0.5 ngày)
+* **Backend:**
+  - Thêm endpoint `GET /api/wishlist/flash-sale-suggestions` tìm sản phẩm trong wishlist đang chạy Flash Sale.
+* **Frontend:**
+  - Hiển thị banner/badge "🔥 Đang Flash Sale!" trên trang `/wishlist`.
+
+### 🔖 Task 2: Hoàn Hàng & Trả Hàng — Return & Refund (2–3 ngày)
+* **Backend:**
+  - `ReturnStatus` enum (`PENDING`, `APPROVED`, `REJECTED`, `REFUNDED`, `CLOSED`).
+  - Entity `ReturnRequest` (lý do, hình ảnh minh chứng, trạng thái, order_id).
+  - APIs cho Buyer (`POST /api/orders/{id}/return`), Seller (`PUT /api/seller/returns/{id}/respond`), Admin (`PUT /api/admin/returns/{id}/resolve`).
+* **Frontend:**
+  - Nút "Yêu cầu hoàn hàng" trên trang chi tiết đơn hàng.
+  - Trang `/returns` quản lý danh sách yêu cầu hoàn hàng.
+  - Tích hợp giao diện xử lý của Seller và Admin.
+
+### 🔖 Task 3: Tìm Kiếm Nâng Cao (2–3 ngày)
+* **Backend:**
+  - MySQL Full-Text Search hoặc Specification-based advanced filters.
+  - Entity `SearchHistory` lưu lịch sử tìm kiếm gần đây.
+  - Endpoint gợi ý autocomplete.
+* **Frontend:**
+  - Dropdown Autocomplete và lịch sử tìm kiếm trên thanh Navbar.
+  - Trang `/search` với bộ lọc nâng cao (khoảng giá, danh mục, xếp hạng).
+
+### 🔖 Task 4: Tích Hợp Vận Chuyển Thực Tế (2–3 ngày)
+* **Backend & Frontend:**
+  - Tích hợp tính phí giao hàng động dựa trên địa chỉ (GHN API giả lập hoặc sandbox).
+  - Trạng thái vận chuyển chi tiết dạng stepper timeline tại trang chi tiết đơn hàng.
+
+### 🔖 Task 5: DevOps & Bảo Mật (3–4 ngày)
+* **Docker:** Multi-stage `Dockerfile` cho Backend, Frontend, và file `docker-compose.yml`.
+* **CI/CD:** GitHub Actions test, build, push Docker images.
+* **Bảo mật:** Entity `RefreshToken` & rotation logic; API Rate Limiting (Bucket4j).

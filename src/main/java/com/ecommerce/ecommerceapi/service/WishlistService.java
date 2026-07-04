@@ -60,4 +60,8 @@ public class WishlistService {
     public boolean isWishlist(Integer userId, Integer productId) {
         return wishlistRepository.existsByUserIdAndProductId(userId, productId);
     }
+
+    public List<Object[]> getWishlistItemsInFlashSale(Integer userId) {
+        return wishlistRepository.findWishlistItemsInActiveFlashSale(userId, java.time.LocalDateTime.now());
+    }
 }

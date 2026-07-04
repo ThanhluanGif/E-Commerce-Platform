@@ -30,4 +30,5 @@ public class ProductDTO {
     private String shopName;
     private List<ProductImageDTO> images;
     private List<ProductVariantDTO> variants;
+    private Boolean isFlashSale;
 }
