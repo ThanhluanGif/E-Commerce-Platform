@@ -6,8 +6,8 @@ const cartService = {
     return response.data; // ApiResponse<List<CartItemDTO>>
   },
 
-  addItem: async (productId, quantity) => {
-    const response = await api.post('/api/cart/items', { productId, quantity });
+  addItem: async (productId, quantity, variantId = null) => {
+    const response = await api.post('/api/cart/items', { productId, quantity, variantId });
     return response.data; // ApiResponse<CartItemDTO>
   },
 

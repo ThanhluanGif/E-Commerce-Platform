@@ -618,10 +618,10 @@ erDiagram
 - [ ] Gợi ý mua khi sản phẩm trong wishlist có Flash Sale
 
 #### Biến Thể Sản Phẩm (Variants/SKU)
-- [ ] Entity `ProductVariant` (sku, màu, size, giá riêng, tồn kho riêng)
-- [ ] UI chọn variant trên trang chi tiết sản phẩm
-- [ ] Giỏ hàng lưu cả `variantId`
-- [ ] Kiểm soát tồn kho theo variant khi đặt hàng
+- [x] Entity `ProductVariant` (sku, màu, size, giá riêng, tồn kho riêng)
+- [x] UI chọn variant trên trang chi tiết sản phẩm
+- [x] Giỏ hàng lưu cả `variantId`
+- [x] Kiểm soát tồn kho theo variant khi đặt hàng
 
 #### Hoàn Hàng & Trả Hàng (Return & Refund)
 - [ ] Entity `ReturnRequest` (reason, images, status)

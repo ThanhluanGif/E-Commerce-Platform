@@ -28,6 +28,7 @@ function ProductDetail() {
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState('description'); // description | reviews
     const [zoomStyle, setZoomStyle] = useState({ display: 'none' });
+    const [selectedVariant, setSelectedVariant] = useState(null);
 
     // Review states
     const [reviews, setReviews] = useState([]);
@@ -50,6 +51,7 @@ function ProductDetail() {
         setLoading(true);
         setError(null);
         setQuantity(1);
+        setSelectedVariant(null);
 
         productService.getProductById(id)
             .then((res) => {
@@ -70,12 +72,13 @@ function ProductDetail() {
                             .catch(err => console.error("Error loading related products:", err));
                     }
                 } else {
-                    setError("Sản phẩm không tồn tại.");
+                    setError("Không thể tải thông tin sản phẩm!");
                 }
                 setLoading(false);
             })
             .catch((err) => {
-                setError(err.message);
+                console.error(err);
+                setError(err.response?.data?.message || "Không thể tải thông tin sản phẩm!");
                 setLoading(false);
             });
 
@@ -91,9 +94,20 @@ function ProductDetail() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
+    const handleSelectVariant = (variant) => {
+        setSelectedVariant(variant);
+        if (variant.imageUrl) {
+            setActiveImage(variant.imageUrl);
+        }
+    };
+
     const handleAddToCartClick = () => {
         if (product) {
-            addToCart(product, quantity);
+            if (product.variants && product.variants.length > 0 && !selectedVariant) {
+                toast.error("Vui lòng chọn phân loại sản phẩm (màu sắc/kích thước)!");
+                return;
+            }
+            addToCart(product, quantity, selectedVariant);
             toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
         }
     };
@@ -168,8 +182,21 @@ function ProductDetail() {
 
     if (!product) return null;
 
-    const hasSale = product.salePrice && product.salePrice > 0;
-    const discount = getDiscountPercent(product.price, product.salePrice);
+    // Resolve dynamic price & stock for selected variant
+    let currentPrice = product.price;
+    let currentSalePrice = product.salePrice;
+    let currentStock = product.stockQuantity;
+
+    if (selectedVariant) {
+        if (selectedVariant.price !== null) currentPrice = selectedVariant.price;
+        if (selectedVariant.salePrice !== null) currentSalePrice = selectedVariant.salePrice;
+        currentStock = selectedVariant.stockQuantity;
+    }
+
+    const hasSale = currentSalePrice && currentSalePrice > 0;
+    const discount = hasSale ? getDiscountPercent(currentPrice, currentSalePrice) : 0;
+    const hasVariants = product.variants && product.variants.length > 0;
+
     const thumbnails = product.images && product.images.length > 0 
         ? product.images 
         : [{ id: 'default', imageUrl: product.imageUrl || "https://via.placeholder.com/400" }];
@@ -246,27 +273,60 @@ function ProductDetail() {
                     <div className="info-price-card">
                         {hasSale ? (
                             <>
-                                <span className="info-price-main">{formatPrice(product.salePrice)}</span>
-                                <span className="info-price-original">{formatPrice(product.price)}</span>
+                                <span className="info-price-main">{formatPrice(currentSalePrice)}</span>
+                                <span className="info-price-original">{formatPrice(currentPrice)}</span>
                                 <span className="info-price-discount">-{discount}% GIẢM</span>
                             </>
                         ) : (
-                            <span className="info-price-main">{formatPrice(product.price)}</span>
+                            <span className="info-price-main">{formatPrice(currentPrice)}</span>
                         )}
                     </div>
 
                     <div className="divider" style={{ margin: 0 }} />
 
+                    {/* Product Variants (Màu sắc/Kích thước) */}
+                    {hasVariants && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: 'var(--space-2)' }}>
+                            <span className="font-semibold" style={{ color: 'var(--color-gray-700)', fontSize: 'var(--font-size-sm)' }}>Phân loại sản phẩm *</span>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {product.variants.map(v => (
+                                    <button 
+                                        key={v.id}
+                                        type="button"
+                                        onClick={() => handleSelectVariant(v)}
+                                        className={`btn btn-sm ${selectedVariant?.id === v.id ? 'btn-primary' : 'btn-secondary'}`}
+                                        style={{ 
+                                            borderRadius: '4px', 
+                                            padding: '6px 12px', 
+                                            border: selectedVariant?.id === v.id ? '1px solid var(--color-primary)' : '1px solid var(--color-gray-300)',
+                                            fontWeight: selectedVariant?.id === v.id ? 'bold' : 'normal',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            height: 'auto',
+                                            textTransform: 'none'
+                                        }}
+                                    >
+                                        {v.imageUrl && (
+                                            <img src={getProductImage(v.imageUrl)} alt={v.name} style={{ width: '18px', height: '18px', objectFit: 'cover', borderRadius: '2px' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                                        )}
+                                        {v.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Stock Status */}
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                         <span className="font-semibold" style={{ color: 'var(--color-gray-700)' }}>Trạng thái:</span>
-                        <span className={`badge ${product.stockQuantity > 0 ? 'badge-success' : 'badge-danger'}`}>
-                            {product.stockQuantity > 0 ? `Còn hàng (${product.stockQuantity})` : 'Hết hàng'}
+                        <span className={`badge ${currentStock > 0 ? 'badge-success' : 'badge-danger'}`}>
+                            {currentStock > 0 ? `Còn hàng (${currentStock})` : 'Hết hàng'}
                         </span>
                     </div>
 
                     {/* Quantity Selector */}
-                    {product.stockQuantity > 0 && (
+                    {currentStock > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                             <span className="font-semibold" style={{ color: 'var(--color-gray-700)' }}>Số lượng:</span>
                             <div className="qty-control">
@@ -281,7 +341,7 @@ function ProductDetail() {
                                 </span>
                                 <button 
                                     className="qty-btn"
-                                    onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
+                                    onClick={() => setQuantity(q => Math.min(currentStock, q + 1))}
                                 >
                                     <IconPlus size={14} />
                                 </button>
@@ -294,11 +354,11 @@ function ProductDetail() {
                         <button 
                             className="btn btn-primary btn-lg btn-block"
                             onClick={handleAddToCartClick}
-                            disabled={product.stockQuantity <= 0}
+                            disabled={currentStock <= 0}
                             style={{ display: 'flex', gap: 8 }}
                         >
                             <IconCart size={20} />
-                            {product.stockQuantity <= 0 ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ HÀNG'}
+                            {currentStock <= 0 ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ HÀNG'}
                         </button>
                     </div>
                 </div>

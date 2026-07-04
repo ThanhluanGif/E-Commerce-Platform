@@ -242,8 +242,15 @@ function Checkout() {
                     <div style={{ maxHeight: '180px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
                         {cartItems.map((item) => (
                             <div key={item.id} className="checkout-item-row">
-                                <span style={{ maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.productName}>
-                                    {item.productName} <strong style={{ color: 'var(--color-gray-900)' }}>x{item.quantity}</strong>
+                                <span style={{ maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', flexDirection: 'column' }} title={item.productName}>
+                                    <span>
+                                        {item.productName} <strong style={{ color: 'var(--color-gray-900)' }}>x{item.quantity}</strong>
+                                    </span>
+                                    {item.variantName && (
+                                        <span style={{ fontSize: '10px', color: 'var(--color-gray-500)', fontStyle: 'italic' }}>
+                                            Phân loại: {item.variantName}
+                                        </span>
+                                    )}
                                 </span>
                                 <span className="font-semibold">{formatPrice(getPrice(item) * item.quantity)}</span>
                             </div>

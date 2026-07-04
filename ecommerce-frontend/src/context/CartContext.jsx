@@ -47,28 +47,35 @@ export const CartProvider = ({ children }) => {
     }, [userId]);
 
     // Add item to cart
-    const addToCart = async (product, quantity) => {
+    const addToCart = async (product, quantity, variant = null) => {
         if (!userId) {
             // Guest mode: update localStorage
             setCartItems(prev => {
-                const existing = prev.find(item => item.productId === product.id);
+                const existing = prev.find(item => item.productId === product.id && item.variantId === (variant ? variant.id : null));
                 let updated;
                 if (existing) {
                     updated = prev.map(item =>
-                        item.productId === product.id
+                        (item.productId === product.id && item.variantId === (variant ? variant.id : null))
                             ? { ...item, quantity: item.quantity + quantity }
                             : item
                     );
                 } else {
+                    const price = variant && variant.price !== null ? variant.price : product.price;
+                    const salePrice = variant && variant.salePrice !== null ? variant.salePrice : product.salePrice;
+                    const stock = variant ? variant.stockQuantity : product.stockQuantity;
+                    const imageUrl = variant && variant.imageUrl ? variant.imageUrl : product.imageUrl;
+
                     updated = [...prev, {
-                        id: `temp_${product.id}`,
+                        id: variant ? `temp_${product.id}_${variant.id}` : `temp_${product.id}`,
                         quantity: quantity,
                         productId: product.id,
                         productName: product.name,
-                        productImageUrl: product.imageUrl,
-                        productPrice: product.price,
-                        productSalePrice: product.salePrice,
-                        productStockQuantity: product.stockQuantity
+                        productImageUrl: imageUrl,
+                        productPrice: price,
+                        productSalePrice: salePrice,
+                        productStockQuantity: stock,
+                        variantId: variant ? variant.id : null,
+                        variantName: variant ? variant.name : null
                     }];
                 }
                 localStorage.setItem('tempCart', JSON.stringify(updated));
@@ -77,7 +84,7 @@ export const CartProvider = ({ children }) => {
         } else {
             // Online mode: call backend API
             try {
-                await cartService.addItem(product.id, quantity);
+                await cartService.addItem(product.id, quantity, variant ? variant.id : null);
                 const res = await cartService.getCart();
                 if (res && res.success && Array.isArray(res.data)) {
                     setCartItems(res.data);

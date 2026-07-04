@@ -93,7 +93,12 @@ function Cart() {
                                 {/* Name & Price */}
                                 <div className="cart-item-info">
                                     <h4 className="cart-item-title">{item.productName}</h4>
-                                    <div className="cart-item-prices">
+                                    {item.variantName && (
+                                        <span className="badge badge-secondary" style={{ display: 'inline-block', fontSize: '10px', marginTop: 2, padding: '2px 6px', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)' }}>
+                                            Phân loại: {item.variantName}
+                                        </span>
+                                    )}
+                                    <div className="cart-item-prices" style={{ marginTop: 4 }}>
                                         <span className="cart-item-price-main">{formatPrice(price)}</span>
                                         {isSale && (
                                             <span className="cart-item-price-original">{formatPrice(item.productPrice)}</span>
