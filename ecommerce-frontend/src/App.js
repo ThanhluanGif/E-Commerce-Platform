@@ -17,6 +17,7 @@ import Register from './pages/Register';
 import ShopPage from './pages/ShopPage';
 import Wishlist from './pages/Wishlist';
 import Messages from './pages/Messages';
+import Addresses from './pages/Addresses';
 import SellerDashboard from './pages/SellerDashboard';
 import FlashSale from './pages/FlashSale';
 import MainLayout from './components/MainLayout';
@@ -47,6 +48,7 @@ function App() {
                             <Route path="/payment-simulation" element={<PaymentSimulation />} />
                             <Route path="/wishlist" element={<Wishlist />} />
                             <Route path="/messages" element={<Messages />} />
+                            <Route path="/addresses" element={<Addresses />} />
                             <Route path="/seller" element={<SellerDashboard />} />
                         </Route>
 

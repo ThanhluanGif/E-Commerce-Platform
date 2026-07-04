@@ -1,7 +1,8 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import orderService from '../services/orderService';
+import addressService from '../services/addressService';
 import Breadcrumb from '../components/Breadcrumb';
 import { formatPrice } from '../utils/helpers';
 import { useToast } from '../utils/toast';
@@ -13,11 +14,53 @@ function Checkout() {
     const navigate = useNavigate();
     const toast = useToast();
 
+    // Address book states
+    const [addresses, setAddresses] = useState([]);
+    const [selectedAddressId, setSelectedAddressId] = useState('');
+
     // Form inputs
     const [shippingAddress, setShippingAddress] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Fetch address book on mount
+    useEffect(() => {
+        addressService.getAllAddresses()
+            .then(res => {
+                if (res && res.success && Array.isArray(res.data)) {
+                    setAddresses(res.data);
+                    
+                    // Preselect default address if present
+                    const defaultAddr = res.data.find(a => a.isDefault);
+                    if (defaultAddr) {
+                        setSelectedAddressId(defaultAddr.id.toString());
+                        const formatted = `${defaultAddr.fullName} (${defaultAddr.phone}) - ${defaultAddr.street}, ${defaultAddr.ward}, ${defaultAddr.district}, ${defaultAddr.city}`;
+                        setShippingAddress(formatted);
+                    } else if (res.data.length > 0) {
+                        setSelectedAddressId(res.data[0].id.toString());
+                        const firstAddr = res.data[0];
+                        const formatted = `${firstAddr.fullName} (${firstAddr.phone}) - ${firstAddr.street}, ${firstAddr.ward}, ${firstAddr.district}, ${firstAddr.city}`;
+                        setShippingAddress(formatted);
+                    }
+                }
+            })
+            .catch(err => console.error("Error loading address book:", err));
+    }, []);
+
+    // Handle Address change selection
+    const handleAddressChange = (addrId) => {
+        setSelectedAddressId(addrId);
+        if (addrId === 'custom') {
+            setShippingAddress('');
+        } else {
+            const match = addresses.find(a => a.id.toString() === addrId);
+            if (match) {
+                const formatted = `${match.fullName} (${match.phone}) - ${match.street}, ${match.ward}, ${match.district}, ${match.city}`;
+                setShippingAddress(formatted);
+            }
+        }
+    };
 
     // Calculation helper
     const getPrice = (item) => {
@@ -109,6 +152,23 @@ function Checkout() {
                     {/* Shipping Address */}
                     <div className="checkout-section-card">
                         <h3 className="checkout-section-title">1. Thông tin giao hàng</h3>
+                        {addresses.length > 0 && (
+                            <div className="form-group" style={{ marginBottom: '15px' }}>
+                                <label className="form-label">Chọn địa chỉ đã lưu</label>
+                                <select 
+                                    className="form-select"
+                                    value={selectedAddressId}
+                                    onChange={(e) => handleAddressChange(e.target.value)}
+                                >
+                                    {addresses.map(a => (
+                                        <option key={a.id} value={a.id}>
+                                            {a.fullName} ({a.phone}) - {a.street}, {a.city} {a.isDefault ? ' [Mặc định]' : ''}
+                                        </option>
+                                    ))}
+                                    <option value="custom">Nhập địa chỉ khác...</option>
+                                </select>
+                            </div>
+                        )}
                         <div className="form-group">
                             <label className="form-label">Địa chỉ nhận hàng chi tiết *</label>
                             <textarea 

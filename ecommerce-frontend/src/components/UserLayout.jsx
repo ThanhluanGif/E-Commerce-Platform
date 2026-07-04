@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   IconUser, IconPackage, IconHeart, 
-  IconMessage, IconEdit, IconLogout 
+  IconMessage, IconEdit, IconLogout, IconMapPin 
 } from '../utils/icons';
 import './UserLayout.css';
 
@@ -35,6 +35,14 @@ function UserLayout({ children, activeTab = 'profile' }) {
           >
             <IconUser size={18} />
             <span>Tài khoản của tôi</span>
+          </Link>
+
+          <Link 
+            to="/addresses" 
+            className={`user-sidebar-menu-item ${activeTab === 'addresses' ? 'active' : ''}`}
+          >
+            <IconMapPin size={18} />
+            <span>Địa chỉ nhận hàng</span>
           </Link>
           
           <Link 

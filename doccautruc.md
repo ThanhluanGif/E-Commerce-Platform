@@ -608,8 +608,8 @@ erDiagram
 #### Sổ địa chỉ (Address Book)
 - [x] Entity `Address` riêng biệt (thay TEXT hiện tại trong User)
 - [x] API CRUD địa chỉ + đặt mặc định
-- [ ] Checkout tự điền địa chỉ mặc định từ sổ địa chỉ
-- [ ] Gợi ý địa chỉ từ danh sách đã lưu khi checkout
+- [x] Checkout tự điền địa chỉ mặc định từ sổ địa chỉ
+- [x] Gợi ý địa chỉ từ danh sách đã lưu khi checkout
 
 #### Wishlist (Yêu thích)
 - [x] Entity `Wishlist` (user + product)
