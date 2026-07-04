@@ -1,15 +1,17 @@
 import React from 'react';
-import Navbar from './Navbar'; // Thanh Navbar mặc định của bạn
+import Navbar from './Navbar';
+import Footer from './Footer';
 import { Outlet } from 'react-router-dom';
 
 const MainLayout = () => {
     return (
-        <>
-            <Navbar /> {/* Luôn hiển thị ở các trang con */}
-            <main>
-                <Outlet /> {/* Nơi chứa nội dung của các trang con (Home, Product...) */}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navbar />
+            <main className="page-content">
+                <Outlet />
             </main>
-        </>
+            <Footer />
+        </div>
     );
 };
 

@@ -1,5 +1,5 @@
-import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from './utils/toast';
 import Home from './pages/Home';
 import ProductList from './pages/ProductList';
 import ProductDetail from './pages/ProductDetail';
@@ -25,8 +25,8 @@ import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
 
 function App() {
     return (
-        <Router>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+        <ToastProvider>
+            <Router>
                 <Routes>
                     <Route element={<MainLayout />}>
                         <Route path="/" element={<Home />} />
@@ -61,8 +61,8 @@ function App() {
                         <Route path="/register" element={<Register />} />
                     </Route>
                 </Routes>
-            </div>
-        </Router>
+            </Router>
+        </ToastProvider>
     );
 }
 

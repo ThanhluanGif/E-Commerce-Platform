@@ -4,12 +4,12 @@ import { Outlet } from 'react-router-dom';
 
 const AuthLayout = () => {
   return (
-    <>
-      <NavbarLogin title="TECHSTORE" />
+    <div style={{ minHeight: '100vh', background: 'var(--color-gray-100)' }}>
+      <NavbarLogin title="E-Commerce" />
       <main>
         <Outlet />
       </main>
-    </>
+    </div>
   );
 };
 

@@ -2,6 +2,12 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
+import {
+  IconSearch, IconCart, IconUser, IconBell, IconHeart,
+  IconMessage, IconStore, IconPackage, IconLogout,
+  IconDashboard, IconChevronDown, IconSettings
+} from '../utils/icons';
+import './Navbar.css';
 
 function Navbar() {
     const { cartItems } = React.useContext(CartContext);
@@ -25,164 +31,126 @@ function Navbar() {
     };
 
     return (
-        <header style={{ background: '#f94e30', fontFamily: 'system-ui, -apple-system, sans-serif', borderBottom: '1px solid #e11d48' }}>
-            
-            {/* 1. TOP MINI BAR (Shopee Style) */}
-            <div style={{ 
-                maxWidth: '1200px', 
-                margin: '0 auto', 
-                padding: '4px 20px', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                fontSize: '12px', 
-                color: 'rgba(255,255,255,0.9)' 
-            }}>
-                <div style={{ display: 'flex', gap: '15px' }}>
-                    <Link to="/seller" style={{ color: 'white', textDecoration: 'none' }}>Kênh Người Bán</Link>
-                    <span style={{ cursor: 'pointer' }}>Tải ứng dụng</span>
-                    <span style={{ cursor: 'pointer' }}>Kết nối 🅵 🅸</span>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <span style={{ cursor: 'pointer' }}>🔔 Thông Báo</span>
-                    <span style={{ cursor: 'pointer' }}>❓ Trợ Giúp</span>
-                    
-                    {isAuthenticated ? (
-                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', fontWeight: 'bold' }}>
-                            <Link to="/messages" style={{ color: 'white', textDecoration: 'none' }}>
-                                💬 Chat
-                            </Link>
-                            <Link to="/wishlist" style={{ color: 'white', textDecoration: 'none' }}>
-                                ❤️ Yêu thích
-                            </Link>
-                            <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>
-                                👤 {username}
-                            </Link>
-                            {isAdmin && (
-                                <Link to="/admin" style={{ color: '#fde047', textDecoration: 'none' }}>
-                                    👑 Quản Trị
-                                </Link>
-                            )}
-                            <span onClick={handleLogout} style={{ cursor: 'pointer', color: 'rgba(255,255,255,0.8)' }}>Đăng Xuất</span>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <Link to="/login" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Đăng Nhập</Link>
-                            <span style={{ opacity: 0.5 }}>|</span>
-                            <Link to="/register" style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>Đăng Ký</Link>
-                        </div>
-                    )}
+        <header className="header">
+            {/* 1. TOP MINI BAR */}
+            <div className="header-topbar">
+                <div className="container header-topbar-inner">
+                    <div className="topbar-left">
+                        <Link to="/seller" className="topbar-link">
+                            <IconStore size={14} />
+                            <span>Kênh Người Bán</span>
+                        </Link>
+                        <span className="topbar-divider hide-mobile" />
+                        <span className="topbar-link hide-mobile">Tải ứng dụng</span>
+                        <span className="topbar-divider hide-mobile" />
+                        <span className="topbar-link hide-mobile">Kết nối</span>
+                    </div>
+
+                    <div className="topbar-right">
+                        <Link to="/messages" className="topbar-link topbar-badge hide-mobile">
+                            <IconBell size={14} />
+                            <span>Thông Báo</span>
+                        </Link>
+                        <span className="topbar-divider hide-mobile" />
+                        <span className="topbar-link hide-mobile">Trợ Giúp</span>
+                        <span className="topbar-divider" />
+
+                        {isAuthenticated ? (
+                            <div className="topbar-user">
+                                <div className="topbar-avatar">
+                                    <IconUser size={14} />
+                                </div>
+                                <span>{username}</span>
+                                <IconChevronDown size={12} />
+
+                                <div className="topbar-dropdown">
+                                    <Link to="/profile" className="topbar-dropdown-item">
+                                        <IconUser size={16} /> Tài khoản của tôi
+                                    </Link>
+                                    <Link to="/orders" className="topbar-dropdown-item">
+                                        <IconPackage size={16} /> Đơn mua
+                                    </Link>
+                                    <Link to="/wishlist" className="topbar-dropdown-item">
+                                        <IconHeart size={16} /> Yêu thích
+                                    </Link>
+                                    <Link to="/messages" className="topbar-dropdown-item">
+                                        <IconMessage size={16} /> Tin nhắn
+                                    </Link>
+                                    {isAdmin && (
+                                        <>
+                                            <div className="topbar-dropdown-divider" />
+                                            <Link to="/admin" className="topbar-dropdown-item">
+                                                <IconDashboard size={16} /> Quản trị Admin
+                                            </Link>
+                                        </>
+                                    )}
+                                    <Link to="/seller" className="topbar-dropdown-item">
+                                        <IconStore size={16} /> Kênh Người Bán
+                                    </Link>
+                                    <div className="topbar-dropdown-divider" />
+                                    <Link to="/profile" className="topbar-dropdown-item">
+                                        <IconSettings size={16} /> Cài đặt
+                                    </Link>
+                                    <div className="topbar-dropdown-item" onClick={handleLogout}>
+                                        <IconLogout size={16} /> Đăng xuất
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                                <Link to="/register" className="topbar-link" style={{ fontWeight: 600 }}>Đăng Ký</Link>
+                                <span className="topbar-divider" />
+                                <Link to="/login" className="topbar-link" style={{ fontWeight: 600 }}>Đăng Nhập</Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* 2. MAIN HEADER BAR */}
-            <div style={{ 
-                maxWidth: '1200px', 
-                margin: '0 auto', 
-                padding: '16px 20px 20px 20px', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                flexWrap: 'wrap', 
-                gap: '20px' 
-            }}>
-                
-                {/* Logo Section */}
-                <Link to="/" style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    textDecoration: 'none', 
-                    color: 'white', 
-                    fontWeight: '800', 
-                    fontSize: '28px' 
-                }}>
-                    <span style={{ fontSize: '32px' }}>🛍️</span>
-                    <span>TechStore</span>
-                </Link>
+            <div className="header-main">
+                <div className="container header-main-inner">
+                    {/* Logo */}
+                    <Link to="/" className="header-logo">
+                        <div className="header-logo-icon">
+                            <IconStore size={22} />
+                        </div>
+                        <span>E-Commerce</span>
+                    </Link>
 
-                {/* Big Search Bar */}
-                <div style={{ flex: '0 1 650px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <form onSubmit={handleSearchSubmit} style={{ 
-                        display: 'flex', 
-                        background: 'white', 
-                        padding: '3px', 
-                        borderRadius: '4px', 
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
-                    }}>
-                        <input 
-                            type="text" 
-                            placeholder="Đăng ký ngay để nhận voucher giảm 50%..." 
-                            value={navSearch}
-                            onChange={(e) => setNavSearch(e.target.value)}
-                            style={{ 
-                                width: '100%', 
-                                border: 'none', 
-                                outline: 'none', 
-                                padding: '10px 15px', 
-                                fontSize: '14px',
-                                color: '#333'
-                            }}
-                        />
-                        <button type="submit" style={{ 
-                            background: '#f94e30', 
-                            color: 'white', 
-                            border: 'none', 
-                            padding: '0 25px', 
-                            borderRadius: '3px', 
-                            cursor: 'pointer', 
-                            fontWeight: 'bold',
-                            fontSize: '14px',
-                            transition: 'background 0.2s' 
-                        }}
-                                onMouseEnter={(e) => e.target.style.background = '#e13b1d'}
-                                onMouseLeave={(e) => e.target.style.background = '#f94e30'}>
-                            🔍
-                        </button>
-                    </form>
-
-                    {/* Quick Search keywords */}
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.85)', paddingLeft: '5px' }}>
-                        <Link to="/products?name=Tivi" style={{ color: 'white', textDecoration: 'none' }}>Tivi</Link>
-                        <Link to="/products?name=Laptop" style={{ color: 'white', textDecoration: 'none' }}>Laptop</Link>
-                        <Link to="/products?name=Sony" style={{ color: 'white', textDecoration: 'none' }}>Sony</Link>
-                        <Link to="/products?name=Smart" style={{ color: 'white', textDecoration: 'none' }}>Smart</Link>
-                        <Link to="/products?name=Bàn" style={{ color: 'white', textDecoration: 'none' }}>Bàn Phím</Link>
+                    {/* Search Bar */}
+                    <div className="header-search">
+                        <form onSubmit={handleSearchSubmit} className="header-search-form">
+                            <input
+                                type="text"
+                                className="header-search-input"
+                                placeholder="Tìm kiếm sản phẩm, thương hiệu, và cửa hàng..."
+                                value={navSearch}
+                                onChange={(e) => setNavSearch(e.target.value)}
+                            />
+                            <button type="submit" className="header-search-btn">
+                                <IconSearch size={18} />
+                            </button>
+                        </form>
+                        <div className="header-keywords">
+                            <Link to="/products?name=Laptop" className="header-keyword">Laptop</Link>
+                            <Link to="/products?name=Điện thoại" className="header-keyword">Điện thoại</Link>
+                            <Link to="/products?name=Tai nghe" className="header-keyword">Tai nghe</Link>
+                            <Link to="/flash-sale" className="header-keyword">Flash Sale</Link>
+                            <Link to="/products?name=Bàn phím" className="header-keyword">Bàn phím</Link>
+                            <Link to="/products?name=Màn hình" className="header-keyword">Màn hình</Link>
+                        </div>
                     </div>
+
+                    {/* Cart */}
+                    <Link to="/cart" className="header-cart">
+                        <IconCart size={28} />
+                        {totalItems > 0 && (
+                            <span className="header-cart-badge">{totalItems > 99 ? '99+' : totalItems}</span>
+                        )}
+                    </Link>
                 </div>
-
-                {/* Cart Icon with badge */}
-                <Link to="/cart" style={{ 
-                    position: 'relative', 
-                    textDecoration: 'none', 
-                    color: 'white', 
-                    fontSize: '26px', 
-                    padding: '8px' 
-                }}>
-                    🛒
-                    {totalItems > 0 && (
-                        <span style={{ 
-                            position: 'absolute', 
-                            top: '0', 
-                            right: '-5px', 
-                            background: 'white', 
-                            color: '#f94e30', 
-                            fontSize: '11px', 
-                            fontWeight: '800', 
-                            borderRadius: '10px', 
-                            padding: '1px 6px',
-                            border: '2px solid #f94e30',
-                            minWidth: '18px',
-                            textAlign: 'center'
-                        }}>
-                            {totalItems}
-                        </span>
-                    )}
-                </Link>
-
             </div>
-
         </header>
     );
 }

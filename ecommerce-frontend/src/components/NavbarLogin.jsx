@@ -1,31 +1,35 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Dùng để chuyển trang khi click Quay lại
-import { FaHome } from 'react-icons/fa'; // Hoặc icon bất kỳ bạn muốn dùng
-import './NavbarLogin.css'; // File CSS riêng cho Navbar này
+import { useNavigate, Link } from 'react-router-dom';
+import { IconHome, IconStore } from '../utils/icons';
+import './NavbarLogin.css';
 
 const NavbarLogin = ({ title }) => {
     const navigate = useNavigate();
 
-    const handleBack = () => {
-        navigate('/'); // Quay về trang chủ, hoặc navigate(-1) để quay lại trang trước đó
-    };
-
     return (
         <nav className="navbar-login">
-            {/* Khối bên trái: Nút quay lại */}
             <div className="nav-left">
-                <button onClick={handleBack} className="back-button">
-                    <FaHome className="back-icon" />
+                <button onClick={() => navigate('/')} className="back-button">
+                    <IconHome size={18} className="back-icon" />
                     <span className="back-text">Quay lại</span>
                 </button>
             </div>
 
-            {/* Khối ở giữa: Tiêu đề động nhận từ props */}
             <div className="nav-center">
-                <h1 className="navbar-title" style={{ color: '#3643ba', fontStyle: 'italic', letterSpacing: '1px', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>{title}</h1>
+                <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconStore size={28} color="#ee4d2d" />
+                    <h1 className="navbar-title" style={{
+                        color: '#ee4d2d',
+                        fontWeight: 800,
+                        margin: 0,
+                        fontSize: '28px',
+                        letterSpacing: '-0.02em'
+                    }}>
+                        {title || 'E-Commerce'}
+                    </h1>
+                </Link>
             </div>
 
-            {/* Khối bên phải: Giữ rỗng để căn giữa tuyệt đối */}
             <div className="nav-right"></div>
         </nav>
     );
