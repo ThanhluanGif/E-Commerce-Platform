@@ -18,6 +18,7 @@ import ShopPage from './pages/ShopPage';
 import Wishlist from './pages/Wishlist';
 import Messages from './pages/Messages';
 import Addresses from './pages/Addresses';
+import Returns from './pages/Returns';
 import SellerDashboard from './pages/SellerDashboard';
 import FlashSale from './pages/FlashSale';
 import MainLayout from './components/MainLayout';
@@ -49,6 +50,7 @@ function App() {
                             <Route path="/wishlist" element={<Wishlist />} />
                             <Route path="/messages" element={<Messages />} />
                             <Route path="/addresses" element={<Addresses />} />
+                            <Route path="/returns" element={<Returns />} />
                             <Route path="/seller" element={<SellerDashboard />} />
                         </Route>
 

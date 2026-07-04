@@ -7,6 +7,7 @@ import {
   IconPlus, IconEdit, IconTrash, IconCheckCircle, 
   IconStore 
 } from '../utils/icons';
+import returnService from '../services/returnService';
 import './SellerDashboard.css';
 
 function SellerDashboard() {
@@ -41,6 +42,12 @@ function SellerDashboard() {
 
     // Orders state
     const [orders, setOrders] = useState([]);
+
+    // Return & Refund state
+    const [shopReturns, setShopReturns] = useState([]);
+    const [showRespondModal, setShowRespondModal] = useState(false);
+    const [selectedReturn, setSelectedReturn] = useState(null);
+    const [responseNote, setResponseNote] = useState('');
 
     const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
 
@@ -115,7 +122,40 @@ function SellerDashboard() {
             })
             .catch(err => console.error(err));
         }
+
+        if (activeTab === 'returns') {
+            returnService.getShopReturns()
+                .then(res => {
+                    if (res && res.success && Array.isArray(res.data)) {
+                        setShopReturns(res.data);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
     }, [activeTab, shop, token]);
+
+    const handleRespondToReturn = async (approved) => {
+        if (!selectedReturn) return;
+        try {
+            const res = await returnService.respondToReturn(selectedReturn.id, approved, responseNote);
+            if (res && res.success) {
+                toast.success(approved ? "Đã chấp nhận yêu cầu hoàn hàng!" : "Đã từ chối yêu cầu hoàn hàng!");
+                setShowRespondModal(false);
+                setResponseNote('');
+                setSelectedReturn(null);
+                
+                // Reload shop returns
+                const updated = await returnService.getShopReturns();
+                if (updated && updated.success && Array.isArray(updated.data)) {
+                    setShopReturns(updated.data);
+                }
+            } else {
+                toast.error(res?.message || "Xử lý thất bại!");
+            }
+        } catch (err) {
+            toast.error("Lỗi: " + (err.response?.data?.message || err.message));
+        }
+    };
 
     // Handle Register Seller
     const handleRegister = (e) => {
@@ -327,6 +367,12 @@ function SellerDashboard() {
                     className={`seller-menu-item btn btn-ghost ${activeTab === 'orders' ? 'active' : ''}`}
                 >
                     <IconClipboard size={16} /> <span>Đơn hàng</span>
+                </button>
+                <button 
+                    onClick={() => setActiveTab('returns')} 
+                    className={`seller-menu-item btn btn-ghost ${activeTab === 'returns' ? 'active' : ''}`}
+                >
+                    <IconPackage size={16} style={{ transform: 'rotate(180deg)' }} /> <span>Hoàn trả</span>
                 </button>
             </aside>
 
@@ -553,7 +599,103 @@ function SellerDashboard() {
                     </div>
                 )}
 
+                {/* 4. RETURNS TAB */}
+                {activeTab === 'returns' && (
+                    <div>
+                        <h2 className="user-content-title" style={{ borderBottom: '1px solid var(--color-gray-200)', paddingBottom: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>Yêu Cầu Hoàn Trả</h2>
+                        <div className="table-responsive">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Đơn Hàng</th>
+                                        <th>Khách Hàng</th>
+                                        <th>Lý Do Hoàn Trả</th>
+                                        <th>Trạng Trạng</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {shopReturns.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="5" className="text-center" style={{ padding: 'var(--space-5)' }}>Chưa có yêu cầu hoàn hàng nào.</td>
+                                        </tr>
+                                    ) : (
+                                        shopReturns.map(ret => (
+                                            <tr key={ret.id}>
+                                                <td className="font-semibold">#{ret.orderCode}</td>
+                                                <td>{ret.username}</td>
+                                                <td>
+                                                    <div>{ret.reason}</div>
+                                                    {ret.imagesUrl && (
+                                                        <a href={ret.imagesUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--color-primary)' }}>Xem ảnh minh chứng</a>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${
+                                                        ret.status === 'PENDING' ? 'badge-warning' :
+                                                        ret.status === 'APPROVED' ? 'badge-info' :
+                                                        ret.status === 'REJECTED' ? 'badge-danger' :
+                                                        ret.status === 'REFUNDED' ? 'badge-success' : 'badge-secondary'
+                                                    }`}>
+                                                        {ret.status === 'PENDING' && 'Chờ shop duyệt'}
+                                                        {ret.status === 'APPROVED' && 'Chờ admin hoàn tiền'}
+                                                        {ret.status === 'REJECTED' && 'Bị từ chối'}
+                                                        {ret.status === 'REFUNDED' && 'Đã hoàn tiền'}
+                                                        {ret.status === 'CLOSED' && 'Đã đóng'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {ret.status === 'PENDING' && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedReturn(ret);
+                                                                setShowRespondModal(true);
+                                                            }} 
+                                                            className="btn btn-primary btn-sm"
+                                                        >
+                                                            Phản hồi
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
             </main>
+
+            {/* Respond Return Modal */}
+            {showRespondModal && selectedReturn && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: 'white', padding: '25px', borderRadius: '8px', maxWidth: '500px', width: '90%', boxShadow: 'var(--shadow-lg)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '15px' }}>Phản hồi yêu cầu Trả hàng / Hoàn tiền</h3>
+                        <div style={{ marginBottom: '15px' }}>
+                            <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}><strong>Mã đơn hàng:</strong> #{selectedReturn.orderCode}</p>
+                            <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}><strong>Khách hàng:</strong> {selectedReturn.username}</p>
+                            <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}><strong>Lý do hoàn:</strong> {selectedReturn.reason}</p>
+                        </div>
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4b5563', marginBottom: '5px' }}>Ghi chú phản hồi (tùy chọn)</label>
+                            <textarea 
+                                value={responseNote} 
+                                onChange={(e) => setResponseNote(e.target.value)}
+                                placeholder="Ghi chú cho khách hàng biết lý do chấp nhận hoặc từ chối..." 
+                                rows="3" 
+                                style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', resize: 'vertical' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => { setShowRespondModal(false); setSelectedReturn(null); }} className="btn btn-secondary" style={{ padding: '8px 16px', background: '#e5e7eb', color: '#1f2937', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ĐÓNG</button>
+                            <button type="button" onClick={() => handleRespondToReturn(false)} className="btn btn-danger" style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>TỪ CHỐI</button>
+                            <button type="button" onClick={() => handleRespondToReturn(true)} className="btn btn-success" style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ĐỒNG Ý</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

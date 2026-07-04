@@ -60,6 +60,14 @@ function UserLayout({ children, activeTab = 'profile' }) {
             <IconHeart size={18} />
             <span>Sản phẩm yêu thích</span>
           </Link>
+
+          <Link 
+            to="/returns" 
+            className={`user-sidebar-menu-item ${activeTab === 'returns' ? 'active' : ''}`}
+          >
+            <IconPackage size={18} style={{ transform: 'rotate(180deg)' }} />
+            <span>Yêu cầu trả hàng</span>
+          </Link>
           
           <Link 
             to="/messages" 

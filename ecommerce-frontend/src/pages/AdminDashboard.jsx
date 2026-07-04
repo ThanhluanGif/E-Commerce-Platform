@@ -3,6 +3,7 @@ import adminService from '../services/adminService';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import api from '../services/api';
+import returnService from '../services/returnService';
 
 function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('stats'); // stats | orders | users | products
@@ -42,6 +43,12 @@ function AdminDashboard() {
     const [pCatId, setPCatId] = useState('');
     const [pImageUrl, setPImageUrl] = useState('');
     const [uploading, setUploading] = useState(false);
+
+    // Return & Refund states
+    const [adminReturns, setAdminReturns] = useState([]);
+    const [showResolveModal, setShowResolveModal] = useState(false);
+    const [selectedReturn, setSelectedReturn] = useState(null);
+    const [resolveNote, setResolveNote] = useState('');
 
     // --- 1. LOAD STATISTICS ---
     const loadStats = () => {
@@ -130,7 +137,39 @@ function AdminDashboard() {
             loadProducts(productPage);
             loadCategories();
         }
+        if (activeTab === 'returns') {
+            returnService.getAllReturns()
+                .then(res => {
+                    if (res && res.success && Array.isArray(res.data)) {
+                        setAdminReturns(res.data);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
     }, [activeTab, orderPage, userPage, productPage]);
+
+    const handleResolveReturn = async (refund) => {
+        if (!selectedReturn) return;
+        try {
+            const res = await returnService.resolveReturn(selectedReturn.id, refund, resolveNote);
+            if (res && res.success) {
+                alert(refund ? "Đã duyệt hoàn tiền thành công!" : "Đã từ chối duyệt hoàn tiền!");
+                setShowResolveModal(false);
+                setResolveNote('');
+                setSelectedReturn(null);
+                
+                // Reload returns
+                const updated = await returnService.getAllReturns();
+                if (updated && updated.success && Array.isArray(updated.data)) {
+                    setAdminReturns(updated.data);
+                }
+            } else {
+                alert(res?.message || "Xử lý thất bại!");
+            }
+        } catch (err) {
+            alert("Lỗi: " + (err.response?.data?.message || err.message));
+        }
+    };
 
     // Handle Order status update
     const handleStatusUpdate = async (orderId, newStatus) => {
@@ -275,6 +314,12 @@ function AdminDashboard() {
                     style={{ padding: '12px 15px', background: activeTab === 'products' ? '#3b82f6' : 'transparent', color: activeTab === 'products' ? 'white' : '#cbd5e1', border: 'none', borderRadius: '6px', textAlign: 'left', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s' }}
                 >
                     🏷️ Sản phẩm
+                </button>
+                <button 
+                    onClick={() => setActiveTab('returns')}
+                    style={{ padding: '12px 15px', background: activeTab === 'returns' ? '#3b82f6' : 'transparent', color: activeTab === 'returns' ? 'white' : '#cbd5e1', border: 'none', borderRadius: '6px', textAlign: 'left', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s' }}
+                >
+                    🔄 Hoàn hàng
                 </button>
             </div>
 
@@ -591,7 +636,111 @@ function AdminDashboard() {
                         )}
                     </div>
                 )}
+
+                {/* 5. RETURNS TAB */}
+                {activeTab === 'returns' && (
+                    <div style={{ flex: 1, background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', padding: '20px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>Quản lý Hoàn Hàng & Hoàn Tiền</h2>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', fontSize: '14px' }}>
+                                <thead>
+                                    <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
+                                        <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Mã Đơn Hàng</th>
+                                        <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Khách Hàng</th>
+                                        <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Lý Do Hoàn</th>
+                                        <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Trạng Thái</th>
+                                        <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {adminReturns.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy yêu cầu hoàn hàng nào.</td>
+                                        </tr>
+                                    ) : (
+                                        adminReturns.map(ret => (
+                                            <tr key={ret.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '12px', fontWeight: 'bold' }}>#{ret.orderCode}</td>
+                                                <td style={{ padding: '12px' }}>{ret.username}</td>
+                                                <td style={{ padding: '12px' }}>
+                                                    <div>{ret.reason}</div>
+                                                    {ret.imagesUrl && (
+                                                        <a href={ret.imagesUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#3b82f6' }}>Xem ảnh minh chứng</a>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '12px' }}>
+                                                    <span style={{ 
+                                                        padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold',
+                                                        background: 
+                                                            ret.status === 'PENDING' ? '#fef3c7' :
+                                                            ret.status === 'APPROVED' ? '#dbeafe' :
+                                                            ret.status === 'REJECTED' ? '#fee2e2' :
+                                                            ret.status === 'REFUNDED' ? '#d1fae5' : '#f3f4f6',
+                                                        color: 
+                                                            ret.status === 'PENDING' ? '#b45309' :
+                                                            ret.status === 'APPROVED' ? '#1d4ed8' :
+                                                            ret.status === 'REJECTED' ? '#b91c1c' :
+                                                            ret.status === 'REFUNDED' ? '#065f46' : '#4b5563'
+                                                    }}>
+                                                        {ret.status === 'PENDING' && 'Chờ shop duyệt'}
+                                                        {ret.status === 'APPROVED' && 'Chờ Admin hoàn tiền'}
+                                                        {ret.status === 'REJECTED' && 'Shop từ chối'}
+                                                        {ret.status === 'REFUNDED' && 'Đã hoàn tiền'}
+                                                        {ret.status === 'CLOSED' && 'Đã đóng'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '12px' }}>
+                                                    {(ret.status === 'APPROVED' || ret.status === 'PENDING') && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedReturn(ret);
+                                                                setShowResolveModal(true);
+                                                            }} 
+                                                            style={{ padding: '6px 12px', background: '#3b82f6', border: 'none', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                        >
+                                                            Duyệt hoàn tiền
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Admin Resolve Return Modal */}
+            {showResolveModal && selectedReturn && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <div style={{ background: 'white', padding: '25px', borderRadius: '8px', maxWidth: '500px', width: '90%', boxShadow: 'var(--shadow-lg)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '15px' }}>Duyệt yêu cầu Trả hàng / Hoàn tiền (Admin)</h3>
+                        <div style={{ marginBottom: '15px', color: '#4b5563', fontSize: '14px' }}>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Mã đơn hàng:</strong> #{selectedReturn.orderCode}</p>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Khách hàng:</strong> {selectedReturn.username}</p>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Lý do hoàn:</strong> {selectedReturn.reason}</p>
+                            <p style={{ margin: '0 0 5px 0' }}><strong>Ý kiến từ Shop:</strong> {selectedReturn.sellerNote || 'Chưa có phản hồi'}</p>
+                        </div>
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4b5563', marginBottom: '5px' }}>Ghi chú của Admin</label>
+                            <textarea 
+                                value={resolveNote} 
+                                onChange={(e) => setResolveNote(e.target.value)}
+                                placeholder="Ghi chú xác nhận hoàn tiền..." 
+                                rows="3" 
+                                style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', resize: 'vertical' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => { setShowResolveModal(false); setSelectedReturn(null); }} style={{ padding: '8px 16px', background: '#e5e7eb', color: '#1f2937', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ĐÓNG</button>
+                            <button type="button" onClick={() => handleResolveReturn(false)} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>TỪ CHỐI</button>
+                            <button type="button" onClick={() => handleResolveReturn(true)} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>DUYỆT HOÀN TIỀN</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
