@@ -5,7 +5,7 @@ import categoryService from '../services/categoryService';
 import ProductCard, { ProductCardSkeleton } from '../components/ProductCard';
 import { 
   IconFlash, IconTruck, IconTicket, IconGift, 
-  IconStore, IconChevronRight, IconStar, IconPackage 
+  IconStore, IconChevronRight, IconPackage 
 } from '../utils/icons';
 import './Home.css';
 

@@ -56,9 +56,9 @@ function Footer() {
                 Cam kết mang đến trải nghiệm mua sắm trực tuyến tốt nhất.
               </p>
               <div className="footer-social">
-                <a href="#" className="footer-social-icon" aria-label="Facebook"><IconFacebook size={18} /></a>
-                <a href="#" className="footer-social-icon" aria-label="Website"><IconGlobe size={18} /></a>
-                <a href="#" className="footer-social-icon" aria-label="Email"><IconMail size={18} /></a>
+                <a href="#/" className="footer-social-icon" aria-label="Facebook"><IconFacebook size={18} /></a>
+                <a href="#/" className="footer-social-icon" aria-label="Website"><IconGlobe size={18} /></a>
+                <a href="#/" className="footer-social-icon" aria-label="Email"><IconMail size={18} /></a>
               </div>
             </div>
 

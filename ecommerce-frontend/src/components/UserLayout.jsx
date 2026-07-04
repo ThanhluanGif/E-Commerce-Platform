@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { getProductImage } from '../utils/helpers';
 import { 
   IconUser, IconPackage, IconHeart, 
   IconMessage, IconEdit, IconLogout 
@@ -10,7 +9,6 @@ import './UserLayout.css';
 
 function UserLayout({ children, activeTab = 'profile' }) {
   const { username, logout } = useContext(AuthContext);
-  const location = useLocation();
 
   return (
     <div className="container user-layout">
