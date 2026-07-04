@@ -3,10 +3,20 @@ import { useParams, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import productService from '../services/productService';
 import reviewService from '../services/reviewService';
+import Breadcrumb from '../components/Breadcrumb';
+import ProductCard from '../components/ProductCard';
+import { formatPrice, getDiscountPercent, getProductImage } from '../utils/helpers';
+import { useToast } from '../utils/toast';
+import { 
+  IconStar, IconCart, IconPlus, IconMinus, 
+  IconStore, IconMessage, IconArrowLeft 
+} from '../utils/icons';
+import './ProductDetail.css';
 
 function ProductDetail() {
     const { id } = useParams();
     const { addToCart } = useContext(CartContext);
+    const toast = useToast();
 
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
@@ -53,7 +63,7 @@ function ProductDetail() {
                         productService.getProductsByCategoryId(p.categoryId)
                             .then(relatedRes => {
                                 if (relatedRes && relatedRes.success && Array.isArray(relatedRes.data)) {
-                                    const filtered = relatedRes.data.filter(item => item.id !== p.id).slice(0, 4);
+                                    const filtered = relatedRes.data.filter(item => item.id !== p.id).slice(0, 6);
                                     setRelatedProducts(filtered);
                                 }
                             })
@@ -84,7 +94,7 @@ function ProductDetail() {
     const handleAddToCartClick = () => {
         if (product) {
             addToCart(product, quantity);
-            alert(`🛒 Đã thêm ${quantity} sản phẩm "${product.name}" vào giỏ hàng!`);
+            toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
         }
     };
 
@@ -98,14 +108,14 @@ function ProductDetail() {
                 comment: newComment
             });
             if (res && res.success) {
-                alert("Đăng đánh giá thành công!");
+                toast.success("Đăng đánh giá thành công!");
                 setNewComment('');
                 setNewRating(5);
                 setCanSubmitReview(false);
                 loadReviews();
             }
         } catch (err) {
-            alert("Không thể gửi đánh giá: " + (err.response?.data?.message || err.message));
+            toast.error("Không thể gửi đánh giá: " + (err.response?.data?.message || err.message));
         }
     };
 
@@ -119,17 +129,17 @@ function ProductDetail() {
             display: 'block',
             position: 'absolute',
             top: '0',
-            left: '105%',
+            left: '102%',
             width: '100%',
             height: '100%',
-            backgroundImage: `url(${activeImage})`,
+            backgroundImage: `url(${getProductImage(activeImage)})`,
             backgroundPosition: `${x}% ${y}%`,
             backgroundSize: '200%',
             backgroundRepeat: 'no-repeat',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
+            border: '1px solid var(--color-gray-200)',
+            borderRadius: 'var(--radius-lg)',
             zIndex: 10,
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            boxShadow: 'var(--shadow-xl)',
             backgroundColor: '#fff'
         });
     };
@@ -138,44 +148,70 @@ function ProductDetail() {
         setZoomStyle({ display: 'none' });
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>⏳ Đang tải thông tin sản phẩm...</div>;
-    if (error) return <div style={{ padding: '40px', color: '#ef4444', textAlign: 'center', fontSize: '18px' }}>❌ Lỗi: {error}</div>;
-    if (!product) return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px' }}>Sản phẩm không tồn tại.</div>;
+    if (loading) {
+        return (
+            <div className="container loading-center">
+                <div className="spinner spinner-lg" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="container" style={{ padding: 'var(--space-8) 0' }}>
+                <div className="badge badge-danger" style={{ display: 'flex', gap: 6, width: '100%', padding: 'var(--space-4)' }}>
+                    Lỗi tải sản phẩm: {error}
+                </div>
+            </div>
+        );
+    }
+
+    if (!product) return null;
 
     const hasSale = product.salePrice && product.salePrice > 0;
+    const discount = getDiscountPercent(product.price, product.salePrice);
     const thumbnails = product.images && product.images.length > 0 
         ? product.images 
         : [{ id: 'default', imageUrl: product.imageUrl || "https://via.placeholder.com/400" }];
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            <Link to="/products" style={{ textDecoration: 'none', color: '#3643ba', fontWeight: '600', display: 'inline-block', marginBottom: '20px' }}>
-                &larr; Quay lại danh sách sản phẩm
+        <div className="container product-detail-container">
+            {/* Breadcrumb */}
+            <Breadcrumb items={[
+                { label: 'Trang chủ', to: '/' },
+                { label: 'Sản phẩm', to: '/products' },
+                { label: product.name }
+            ]} />
+
+            <Link to="/products" className="btn btn-ghost btn-sm" style={{ marginBottom: 'var(--space-4)' }}>
+                <IconArrowLeft size={14} /> Quay lại danh sách
             </Link>
 
             {/* MAIN PRODUCT DISPLAY */}
-            <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', marginBottom: '40px' }}>
-                
+            <div className="detail-layout">
                 {/* Image Gallery */}
-                <div style={{ flex: '1 1 400px', maxWidth: '500px' }}>
-                    <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', position: 'relative', cursor: 'zoom-in' }}
-                         onMouseMove={handleMouseMove}
-                         onMouseLeave={handleMouseLeave}>
+                <div className="gallery-container">
+                    <div 
+                        className="gallery-main"
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         <img 
-                            src={activeImage} 
+                            src={getProductImage(activeImage)} 
                             alt={product.name} 
-                            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                         />
                         <div style={zoomStyle}></div>
                     </div>
 
                     {thumbnails.length > 1 && (
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '15px', overflowX: 'auto', paddingBottom: '5px' }}>
+                        <div className="gallery-thumbnails">
                             {thumbnails.map(thumb => (
-                                <div key={thumb.id} 
-                                     onClick={() => setActiveImage(thumb.imageUrl)}
-                                     style={{ width: '80px', height: '80px', border: activeImage === thumb.imageUrl ? '2px solid #3643ba' : '1px solid #e5e7eb', borderRadius: '6px', overflow: 'hidden', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <img src={thumb.imageUrl} alt="preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                                <div 
+                                    key={thumb.id} 
+                                    onClick={() => setActiveImage(thumb.imageUrl)}
+                                    className={`thumbnail-item ${activeImage === thumb.imageUrl ? 'active' : ''}`}
+                                >
+                                    <img src={getProductImage(thumb.imageUrl)} alt="preview" />
                                 </div>
                             ))}
                         </div>
@@ -183,111 +219,164 @@ function ProductDetail() {
                 </div>
 
                 {/* Product Info */}
-                <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '13px', color: '#6b7280', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '8px' }}>
+                <div className="info-container">
+                    <span className="info-category">
                         {product.categoryName || 'Sản phẩm'}
                     </span>
-                    <h2 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', margin: '0 0 15px 0', lineHeight: '1.2' }}>{product.name}</h2>
+                    <h2 className="info-title">{product.name}</h2>
                     
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px' }}>
+                    <div className="info-meta-row">
+                        <div className="stars">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <IconStar 
+                                    key={i} 
+                                    size={14} 
+                                    fill={i < Math.round(product.averageRating || 5) ? 'var(--color-star)' : 'none'} 
+                                    color={i < Math.round(product.averageRating || 5) ? 'var(--color-star)' : 'var(--color-star-empty)'} 
+                                />
+                            ))}
+                            <span style={{ marginLeft: 4, color: 'var(--color-gray-900)', fontWeight: 600 }}>
+                                {product.averageRating ? product.averageRating.toFixed(1) : '5.0'}
+                            </span>
+                        </div>
+                        <span style={{ color: 'var(--color-gray-300)' }}>|</span>
+                        <span>Đã bán {product.soldCount || 0}</span>
+                    </div>
+
+                    <div className="info-price-card">
                         {hasSale ? (
                             <>
-                                <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#f94e30' }}>{product.salePrice.toLocaleString('vi-VN')} đ</span>
-                                <span style={{ fontSize: '18px', color: '#9ca3af', textDecoration: 'line-through' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                                <span className="info-price-main">{formatPrice(product.salePrice)}</span>
+                                <span className="info-price-original">{formatPrice(product.price)}</span>
+                                <span className="info-price-discount">-{discount}% GIẢM</span>
                             </>
                         ) : (
-                            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#f94e30' }}>{product.price.toLocaleString('vi-VN')} đ</span>
+                            <span className="info-price-main">{formatPrice(product.price)}</span>
                         )}
-                        <span style={{ marginLeft: 'auto', background: product.stockQuantity > 0 ? '#ecfdf5' : '#fef2f2', color: product.stockQuantity > 0 ? '#059669' : '#dc2626', fontSize: '13px', fontWeight: '600', padding: '4px 10px', borderRadius: '12px' }}>
+                    </div>
+
+                    <div className="divider" style={{ margin: 0 }} />
+
+                    {/* Stock Status */}
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <span className="font-semibold" style={{ color: 'var(--color-gray-700)' }}>Trạng thái:</span>
+                        <span className={`badge ${product.stockQuantity > 0 ? 'badge-success' : 'badge-danger'}`}>
                             {product.stockQuantity > 0 ? `Còn hàng (${product.stockQuantity})` : 'Hết hàng'}
                         </span>
                     </div>
 
-                    <div style={{ width: '100%', height: '1px', background: '#e5e7eb', marginBottom: '20px' }}></div>
-
+                    {/* Quantity Selector */}
                     {product.stockQuantity > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px' }}>
-                            <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#4b5563' }}>Số lượng:</span>
-                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <span className="font-semibold" style={{ color: 'var(--color-gray-700)' }}>Số lượng:</span>
+                            <div className="qty-control">
                                 <button 
+                                    className="qty-btn"
                                     onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                    style={{ border: 'none', background: 'none', padding: '10px 15px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
                                 >
-                                    -
+                                    <IconMinus size={14} />
                                 </button>
-                                <span style={{ padding: '0 15px', fontSize: '16px', fontWeight: 'bold', minWidth: '30px', textAlign: 'center' }}>{quantity}</span>
+                                <span className="qty-value" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {quantity}
+                                </span>
                                 <button 
+                                    className="qty-btn"
                                     onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
-                                    style={{ border: 'none', background: 'none', padding: '10px 15px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
                                 >
-                                    +
+                                    <IconPlus size={14} />
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '15px' }}>
+                    {/* CTA Actions */}
+                    <div style={{ display: 'flex', gap: '15px', marginTop: 'var(--space-2)' }}>
                         <button 
+                            className="btn btn-primary btn-lg btn-block"
                             onClick={handleAddToCartClick}
                             disabled={product.stockQuantity <= 0}
-                            style={{ flex: 1, padding: '15px 30px', background: product.stockQuantity <= 0 ? '#d1d5db' : '#f94e30', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: product.stockQuantity <= 0 ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+                            style={{ display: 'flex', gap: 8 }}
                         >
+                            <IconCart size={20} />
                             {product.stockQuantity <= 0 ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ HÀNG'}
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* Shop info banner */}
+            {product.shopName && (
+                <div className="shop-card">
+                    <div className="shop-info-left">
+                        <div className="shop-avatar">
+                            {product.shopName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h4 style={{ fontWeight: 700, fontSize: 'var(--font-size-md)', margin: 0 }}>{product.shopName}</h4>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', margin: 0 }}>Đang hoạt động</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <Link to={`/shop/${product.shopSlug || ''}`} className="btn btn-secondary btn-sm" style={{ display: 'flex', gap: 4 }}>
+                            <IconStore size={14} /> Xem Cửa Hàng
+                        </Link>
+                        <Link to="/messages" className="btn btn-ghost btn-sm" style={{ display: 'flex', gap: 4, border: '1px solid var(--color-gray-300)' }}>
+                            <IconMessage size={14} /> Chat Ngay
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {/* TAB SYSTEM */}
-            <div style={{ marginBottom: '50px' }}>
-                <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '20px' }}>
+            <div className="card" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-6)' }}>
+                <div className="tabs" style={{ marginBottom: 'var(--space-4)' }}>
                     <button 
+                        className={`tab ${activeTab === 'description' ? 'active' : ''}`}
                         onClick={() => setActiveTab('description')}
-                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'description' ? '3px solid #f94e30' : 'none', color: activeTab === 'description' ? '#f94e30' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                         Mô tả sản phẩm
                     </button>
                     <button 
+                        className={`tab ${activeTab === 'reviews' ? 'active' : ''}`}
                         onClick={() => setActiveTab('reviews')}
-                        style={{ padding: '12px 25px', background: 'none', border: 'none', borderBottom: activeTab === 'reviews' ? '3px solid #f94e30' : 'none', color: activeTab === 'reviews' ? '#f94e30' : '#6b7280', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                         Đánh giá & Bình luận ({reviews.length})
                     </button>
                 </div>
 
                 {activeTab === 'description' ? (
-                    <div style={{ padding: '10px 0', color: '#374151', lineHeight: '1.7', fontSize: '15px' }}>
+                    <div style={{ color: 'var(--color-gray-800)', lineHeight: '1.7', fontSize: 'var(--font-size-base)', whiteSpace: 'pre-line' }}>
                         {product.description || "Chưa có mô tả chi tiết cho sản phẩm này."}
                     </div>
                 ) : (
-                    <div style={{ padding: '10px 0' }}>
+                    <div className="reviews-section">
                         {/* Write a review section */}
                         {canSubmitReview && (
-                            <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
-                                <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold', color: '#1f2937' }}>Đánh giá sản phẩm này</h4>
+                            <div className="review-form">
+                                <h4 style={{ margin: '0 0 15px 0', fontSize: 'var(--font-size-md)' }}>Đánh giá sản phẩm này</h4>
                                 <form onSubmit={handleReviewSubmit}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>Chọn số sao:</span>
-                                        <div style={{ display: 'flex', gap: '5px', cursor: 'pointer', fontSize: '20px', color: '#fbbf24' }}>
+                                        <span className="font-semibold" style={{ fontSize: 'var(--font-size-sm)' }}>Chọn số sao:</span>
+                                        <div style={{ display: 'flex', gap: '5px', cursor: 'pointer', color: 'var(--color-star)' }}>
                                             {[1, 2, 3, 4, 5].map(star => (
                                                 <span key={star} onClick={() => setNewRating(star)}>
-                                                    {star <= newRating ? '★' : '☆'}
+                                                    <IconStar size={20} fill={star <= newRating ? 'var(--color-star)' : 'none'} color={star <= newRating ? 'var(--color-star)' : 'var(--color-star-empty)'} />
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                                        <label style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>Nhận xét chi tiết *</label>
+                                    <div className="form-group" style={{ marginBottom: '15px' }}>
+                                        <label className="form-label">Nhận xét chi tiết *</label>
                                         <textarea 
+                                            className="form-textarea"
                                             rows="3"
                                             value={newComment}
                                             onChange={(e) => setNewComment(e.target.value)}
                                             placeholder="Cảm nhận của bạn về sản phẩm này (chất lượng, đóng gói, vận chuyển...)"
-                                            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #d1d5db', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
                                             required
                                         />
                                     </div>
-                                    <button type="submit" style={{ padding: '8px 20px', background: '#f94e30', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
+                                    <button type="submit" className="btn btn-primary">
                                         Gửi đánh giá
                                     </button>
                                 </form>
@@ -296,21 +385,24 @@ function ProductDetail() {
 
                         {/* List reviews */}
                         {reviews.length === 0 ? (
-                            <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '20px 0' }}>Chưa có đánh giá nào cho sản phẩm này.</p>
+                            <div className="empty-state" style={{ padding: 'var(--space-6) 0' }}>
+                                <p style={{ color: 'var(--color-gray-500)', fontStyle: 'italic' }}>Chưa có đánh giá nào cho sản phẩm này.</p>
+                            </div>
                         ) : (
                             reviews.map((rev) => {
                                 const dateStr = new Date(rev.createdAt).toLocaleDateString('vi-VN');
                                 return (
-                                    <div key={rev.id} style={{ borderBottom: '1px solid #f3f4f6', padding: '15px 0' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                            <strong style={{ fontSize: '15px', color: '#1f2937' }}>{rev.username}</strong>
-                                            <span style={{ fontSize: '13px', color: '#9ca3af' }}>{dateStr}</span>
+                                    <div key={rev.id} className="review-item">
+                                        <div className="review-header">
+                                            <strong className="review-author">{rev.username}</strong>
+                                            <span className="review-date">{dateStr}</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '3px', color: '#fbbf24', fontSize: '14px', marginBottom: '8px' }}>
-                                            {Array.from({ length: rev.rating }).map((_, i) => <span key={i}>★</span>)}
-                                            {Array.from({ length: 5 - rev.rating }).map((_, i) => <span key={i} style={{ color: '#e5e7eb' }}>★</span>)}
+                                        <div style={{ display: 'flex', gap: '3px', color: 'var(--color-star)', marginBottom: '8px' }}>
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <IconStar key={i} size={12} fill={i < rev.rating ? 'var(--color-star)' : 'none'} color={i < rev.rating ? 'var(--color-star)' : 'var(--color-star-empty)'} />
+                                            ))}
                                         </div>
-                                        <p style={{ margin: 0, fontSize: '14px', color: '#4b5563' }}>{rev.comment}</p>
+                                        <p className="review-content">{rev.comment}</p>
                                     </div>
                                 );
                             })
@@ -321,43 +413,12 @@ function ProductDetail() {
 
             {/* RELATED PRODUCTS */}
             {relatedProducts.length > 0 && (
-                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '40px', marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1f2937', marginBottom: '20px' }}>Sản phẩm liên quan</h3>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-                        {relatedProducts.map(rel => {
-                            const relSale = rel.salePrice && rel.salePrice > 0;
-                            return (
-                                <div key={rel.id} style={{ border: '1px solid #e5e7eb', padding: '15px', borderRadius: '8px', background: '#fff', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', cursor: 'pointer' }}
-                                     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                                     onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                                    
-                                    <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', borderRadius: '6px', overflow: 'hidden', marginBottom: '12px' }}>
-                                        <img src={rel.imageUrl || "https://via.placeholder.com/150"} alt={rel.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                                    </div>
-                                    <h4 style={{ fontSize: '14px', fontWeight: 'bold', margin: '0 0 8px 0', minHeight: '35px', color: '#1f2937' }}>{rel.name}</h4>
-                                    
-                                    <div style={{ margin: 'auto 0 10px 0' }}>
-                                        {relSale ? (
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#ef4444' }}>{rel.salePrice.toLocaleString('vi-VN')} đ</span>
-                                                <span style={{ fontSize: '11px', color: '#9ca3af', textDecoration: 'line-through' }}>{rel.price.toLocaleString('vi-VN')} đ</span>
-                                            </div>
-                                        ) : (
-                                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#f94e30' }}>{rel.price.toLocaleString('vi-VN')} đ</span>
-                                        )}
-                                    </div>
-
-                                    <Link to={`/products/${rel.id}`} style={{ textDecoration: 'none' }}>
-                                        <button style={{ width: '100%', padding: '8px 0', background: 'white', border: '1px solid #f94e30', color: '#f94e30', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-                                                onMouseEnter={(e) => { e.target.style.background = '#f94e30'; e.target.style.color = 'white'; }}
-                                                onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.color = '#f94e30'; }}>
-                                            Xem chi tiết
-                                        </button>
-                                    </Link>
-                                </div>
-                            );
-                        })}
+                <div style={{ borderTop: '1px solid var(--color-gray-200)', paddingTop: 'var(--space-10)', marginTop: 'var(--space-10)', marginBottom: 'var(--space-6)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, marginBottom: 'var(--space-4)' }}>Sản phẩm liên quan</h3>
+                    <div className="product-grid">
+                        {relatedProducts.map(rel => (
+                            <ProductCard key={rel.id} product={rel} />
+                        ))}
                     </div>
                 </div>
             )}

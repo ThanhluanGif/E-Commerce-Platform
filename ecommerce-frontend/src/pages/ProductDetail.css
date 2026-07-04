@@ -1,0 +1,208 @@
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-8);
+  margin-top: var(--space-4);
+  align-items: start;
+}
+
+/* --- Gallery & Thumbnail System --- */
+.gallery-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.gallery-main {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white);
+  position: relative;
+  cursor: zoom-in;
+}
+
+.gallery-main img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform var(--transition-base);
+}
+
+.gallery-thumbnails {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.thumbnail-item {
+  width: 80px;
+  height: 80px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+.thumbnail-item:hover {
+  border-color: var(--color-primary);
+}
+.thumbnail-item.active {
+  border-color: var(--color-primary);
+  border-width: 2px;
+}
+.thumbnail-item img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* --- Info Details --- */
+.info-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--color-white);
+  padding: var(--space-6);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.info-category {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.05em;
+}
+
+.info-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  line-height: var(--line-height-tight);
+}
+
+.info-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.info-price-card {
+  background: var(--color-gray-50);
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.info-price-main {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-primary);
+}
+
+.info-price-original {
+  font-size: var(--font-size-md);
+  color: var(--color-gray-500);
+  text-decoration: line-through;
+}
+
+.info-price-discount {
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Shop Card */
+.shop-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-white);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-top: var(--space-4);
+}
+.shop-info-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.shop-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  border: 1px solid var(--color-gray-200);
+  font-size: var(--font-size-lg);
+}
+
+/* Tabs and Reviews */
+.reviews-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.review-item {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.review-author {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+.review-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+.review-content {
+  color: var(--color-gray-700);
+  line-height: var(--line-height-normal);
+}
+
+/* Review Form */
+.review-form {
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+/* --- Responsive --- */
+@media (max-width: 1024px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+  .gallery-main {
+    height: 380px;
+  }
+}
