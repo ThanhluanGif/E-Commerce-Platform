@@ -24,7 +24,7 @@ public class RegisterRequest {
     @Email(message = "Email không hợp lệ!")
     private String email;
 
-    private UserRole role;
+
 
     private String address;
 

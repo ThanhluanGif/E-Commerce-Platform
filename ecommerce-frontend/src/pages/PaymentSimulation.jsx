@@ -15,22 +15,29 @@ function PaymentSimulation() {
     const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
-        if (orderId) {
-            orderService.getOrderDetails(orderId)
-                .then(res => {
-                    if (res && res.success) {
-                        setOrder(res.data);
-                    }
-                    setLoading(false);
-                })
-                .catch(err => {
-                    console.error(err);
-                    setLoading(false);
-                });
-        } else {
-            setLoading(false);
+        if (!orderId) {
+            alert("⚠️ Không tìm thấy mã đơn hàng thanh toán!");
+            navigate('/');
+            return;
         }
-    }, [orderId]);
+
+        orderService.getOrderDetails(orderId)
+            .then(res => {
+                if (res && res.success) {
+                    setOrder(res.data);
+                } else {
+                    alert("⚠️ Không tìm thấy thông tin đơn hàng!");
+                    navigate('/');
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("⚠️ Lỗi tải thông tin đơn hàng!");
+                navigate('/');
+                setLoading(false);
+            });
+    }, [orderId, navigate]);
 
     const handlePaymentConfirm = async () => {
         setProcessing(true);

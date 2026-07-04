@@ -55,8 +55,11 @@ function ProductList() {
             sort: sortBy
         };
 
-        if (searchTerm.trim() !== '') params.name = searchTerm;
-        if (selectedCategory !== '') params.categoryId = selectedCategory;
+        const nameQuery = searchParams.get('name') || '';
+        const catQuery = searchParams.get('categoryId') || '';
+
+        if (nameQuery.trim() !== '') params.name = nameQuery;
+        if (catQuery !== '') params.categoryId = catQuery;
         if (minPrice !== '') params.minPrice = minPrice;
         if (maxPrice !== '') params.maxPrice = maxPrice;
 
@@ -74,8 +77,7 @@ function ProductList() {
                 setError(err.message);
                 setLoading(false);
             });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, sortBy, selectedCategory, minPrice, maxPrice, pageSize]);
+    }, [page, sortBy, searchParams, minPrice, maxPrice, pageSize]);
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();

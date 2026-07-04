@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 function ShopPage() {
     const { slug } = useParams();
@@ -16,14 +16,14 @@ function ShopPage() {
         setError('');
         
         // Fetch shop details
-        axios.get(`http://localhost:8080/api/shops/${slug}`)
+        api.get(`/api/shops/${slug}`)
             .then(res => {
                 if (res.data && res.data.success) {
                     const shopData = res.data.data;
                     setShop(shopData);
                     
                     // Fetch products of this shop
-                    return axios.get(`http://localhost:8080/api/products?shopId=${shopData.id}`);
+                    return api.get(`/api/products?shopId=${shopData.id}`);
                 } else {
                     throw new Error("Không lấy được dữ liệu gian hàng!");
                 }
@@ -48,9 +48,7 @@ function ShopPage() {
             return;
         }
 
-        axios.post(`http://localhost:8080/api/chat/conversations/${shop.id}`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        api.post(`/api/chat/conversations/${shop.id}`)
         .then(res => {
             if (res.data && res.data.success) {
                 navigate(`/messages?convId=${res.data.data.id}`);

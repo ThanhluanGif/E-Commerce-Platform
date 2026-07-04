@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import promotionService from '../services/promotionService';
 
 function FlashSale() {
     const [flashSales, setFlashSales] = useState([]);
@@ -10,10 +10,10 @@ function FlashSale() {
 
     useEffect(() => {
         setLoading(true);
-        axios.get('http://localhost:8080/api/flash-sales/active')
+        promotionService.getActiveFlashSale()
         .then(res => {
-            if (res.data && res.data.success) {
-                const sales = res.data.data || [];
+            if (res && res.success) {
+                const sales = res.data || [];
                 setFlashSales(sales);
                 
                 if (sales.length > 0) {

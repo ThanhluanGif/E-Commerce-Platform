@@ -2,14 +2,15 @@ package com.ecommerce.ecommerceapi.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtProvider {
-    // Tạo một chuỗi Secret Key bí mật dùng để ký và mã hóa Token (độ dài tối thiểu 256-bit)
-    private final String JWT_SECRET = "ChuoidebaoMatSieuCapVipProNhatDinhKhongDuocDeLo123456789";
+    @Value("${jwt.secret}")
+    private String JWT_SECRET;
     // Thời gian hết hạn của Token: 1 ngày (tính bằng mili giây)
     private final long JWT_EXPIRATION = 86400000L;
 

@@ -37,7 +37,7 @@ public class AuthService {
                 .username(request.getUsername())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                .role(request.getRole() != null ? request.getRole() : UserRole.CUSTOMER)
+                .role(UserRole.CUSTOMER)
                 .address(request.getAddress())
                 .phone(request.getPhone())
                 .avatarUrl(request.getAvatarUrl())

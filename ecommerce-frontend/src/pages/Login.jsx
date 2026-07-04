@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
+import { AuthContext } from '../context/AuthContext';
 
 
 function Login() {
+    const { login } = useContext(AuthContext);
     // 1. Khai báo state để quản lý dữ liệu ô nhập (Form Input)
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -11,49 +14,24 @@ function Login() {
     const navigate = useNavigate();
 
     // 2. Hàm xử lý khi bấm nút Đăng Nhập
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault(); // Ngăn trang web tải lại mặc định của thẻ <form>
 
-        const loginData = {
-            username: username,
-            password: password
-        };
-
-        // 3. Gọi API Login sang Backend Spring Boot
-        fetch('http://localhost:8080/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(loginData)
-        })
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error('Sai tài khoản hoặc mật khẩu.');
-                }
-                return res.json();
-            })
-            .then((data) => {
-                const loginRes = (data && data.success) ? data.data : data;
-                if (loginRes && loginRes.token) {
-                    localStorage.setItem('jwtToken', loginRes.token);
-                    if (loginRes.user) {
-                        localStorage.setItem('userId', loginRes.user.id);
-                        localStorage.setItem('username', loginRes.user.username);
-                        localStorage.setItem('userRole', loginRes.user.role);
-                    }
-                    setMessage('✅ Đăng nhập thành công!');
-                    setTimeout(() => {
-                        window.dispatchEvent(new Event('storage')); // Notify components of storage change
-                        navigate('/');
-                    }, 1000);
-                } else {
-                    throw new Error(data.message || 'Đăng nhập thất bại.');
-                }
-            })
-            .catch((err) => {
-                setMessage(`❌ Lỗi: ${err.message}`);
-            });
+        try {
+            const res = await authService.login(username, password);
+            const loginRes = res.success ? res.data : res;
+            if (loginRes && loginRes.token) {
+                login(loginRes.token, loginRes.user);
+                setMessage('✅ Đăng nhập thành công!');
+                setTimeout(() => {
+                    navigate('/');
+                }, 1000);
+            } else {
+                throw new Error(res.message || 'Đăng nhập thất bại.');
+            }
+        } catch (err) {
+            setMessage(`❌ Lỗi: ${err.response?.data?.message || err.message || 'Sai tài khoản hoặc mật khẩu.'}`);
+        }
     };
 
     return (

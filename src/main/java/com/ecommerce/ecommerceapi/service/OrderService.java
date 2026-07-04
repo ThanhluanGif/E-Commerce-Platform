@@ -71,21 +71,33 @@ public class OrderService {
             ProductVariant variant = cartItem.getVariant();
             
             if (variant != null) {
-                if (variant.getStockQuantity() < cartItem.getQuantity()) {
-                    throw new BadRequestException("Biến thể '" + variant.getName() + "' của sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + variant.getStockQuantity() + ")!");
+                // Fetch variant with PESSIMISTIC_WRITE lock
+                ProductVariant lockedVariant = productVariantRepository.findByIdWithLock(variant.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể!"));
+                
+                if (lockedVariant.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Biến thể '" + lockedVariant.getName() + "' của sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + lockedVariant.getStockQuantity() + ")!");
                 }
                 
                 // Deduct variant stock
-                variant.setStockQuantity(variant.getStockQuantity() - cartItem.getQuantity());
-                productVariantRepository.save(variant);
+                lockedVariant.setStockQuantity(lockedVariant.getStockQuantity() - cartItem.getQuantity());
+                productVariantRepository.save(lockedVariant);
+                
+                variant = lockedVariant;
             } else {
-                if (product.getStockQuantity() < cartItem.getQuantity()) {
-                    throw new BadRequestException("Sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + product.getStockQuantity() + ")!");
+                // Fetch product with PESSIMISTIC_WRITE lock
+                Product lockedProduct = productRepository.findByIdWithLock(product.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm!"));
+                
+                if (lockedProduct.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Sản phẩm '" + lockedProduct.getName() + "' không đủ số lượng tồn kho (Còn lại: " + lockedProduct.getStockQuantity() + ")!");
                 }
                 
                 // Deduct product stock
-                product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
-                productRepository.save(product);
+                lockedProduct.setStockQuantity(lockedProduct.getStockQuantity() - cartItem.getQuantity());
+                productRepository.save(lockedProduct);
+                
+                product = lockedProduct;
             }
 
             BigDecimal priceAtPurchase = product.getSalePrice() != null && product.getSalePrice().compareTo(BigDecimal.ZERO) > 0
@@ -136,7 +148,7 @@ public class OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
 
-        if (!order.getUser().getId().equals(userId) && !user.getRole().name().equals("Admin")) {
+        if (!order.getUser().getId().equals(userId) && user.getRole() != UserRole.ADMIN) {
             throw new BadRequestException("Bạn không có quyền truy cập đơn hàng này!");
         }
 
@@ -194,9 +206,15 @@ public class OrderService {
     private void returnStockForOrder(Order order) {
         if (order.getOrderItems() != null) {
             for (OrderItem item : order.getOrderItems()) {
-                Product product = item.getProduct();
-                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
-                productRepository.save(product);
+                if (item.getVariant() != null) {
+                    ProductVariant variant = item.getVariant();
+                    variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
+                    productVariantRepository.save(variant);
+                } else {
+                    Product product = item.getProduct();
+                    product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                    productRepository.save(product);
+                }
             }
         }
     }

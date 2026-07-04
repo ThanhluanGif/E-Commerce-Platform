@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import UserLayout from '../components/UserLayout';
 import { useToast } from '../utils/toast';
 import { getProductImage } from '../utils/helpers';
 import { IconMessage, IconWarning } from '../utils/icons';
+import chatService from '../services/chatService';
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 import './Messages.css';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 function Messages() {
     const [searchParams] = useSearchParams();
@@ -28,6 +32,7 @@ function Messages() {
     };
 
     const messagesEndRef = useRef(null);
+    const stompClientRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,12 +42,10 @@ function Messages() {
     const fetchConversations = () => {
         if (!token) return;
         setLoadingConvs(true);
-        axios.get(`http://localhost:8080/api/chat/conversations?isSeller=${isSellerMode}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        chatService.getConversations(isSellerMode)
         .then(res => {
-            if (res.data && res.data.success) {
-                const list = res.data.data || [];
+            if (res && res.success) {
+                const list = res.data || [];
                 setConversations(list);
                 
                 // If we have a query parameter convId, set it active
@@ -63,13 +66,11 @@ function Messages() {
 
     // Load messages of active conversation
     const fetchMessages = () => {
-        if (!token || !activeConv) return;
-        axios.get(`http://localhost:8080/api/chat/conversations/${activeConv.id}/messages`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        if (!token || !activeConv) return Promise.resolve();
+        return chatService.getMessages(activeConv.id)
         .then(res => {
-            if (res.data && res.data.success) {
-                setMessages(res.data.data || []);
+            if (res && res.success) {
+                setMessages(res.data || []);
             }
         })
         .catch(err => console.error(err));
@@ -80,26 +81,40 @@ function Messages() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token, isSellerMode]);
 
+    // WebSocket STOMP Connection handler
     useEffect(() => {
-        if (activeConv) {
-            setLoadingMsgs(true);
-            fetchMessages();
-            setLoadingMsgs(false);
-        } else {
-            setMessages([]);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeConv]);
+        if (!activeConv || !token) return;
 
-    // Simulated realtime polling every 3 seconds
-    useEffect(() => {
-        if (!activeConv) return;
-        const interval = setInterval(() => {
-            fetchMessages();
-        }, 3000);
-        return () => clearInterval(interval);
+        setLoadingMsgs(true);
+        fetchMessages().finally(() => setLoadingMsgs(false));
+
+        // Connect to WebSocket STOMP broker
+        const socket = new SockJS(`${API_BASE_URL}/ws`);
+        const stompClient = Stomp.over(socket);
+        stompClient.debug = () => {}; // Mute console logging
+
+        stompClient.connect({ Authorization: `Bearer ${token}` }, () => {
+            stompClientRef.current = stompClient;
+            stompClient.subscribe(`/topic/chat/${activeConv.id}`, (messageOutput) => {
+                const messageObj = JSON.parse(messageOutput.body);
+                setMessages(prev => {
+                    // Check for duplicate messages to avoid adding twice when sending
+                    if (prev.some(m => m.id === messageObj.id)) return prev;
+                    return [...prev, messageObj];
+                });
+            });
+        }, (error) => {
+            console.error('WebSocket connection error:', error);
+        });
+
+        return () => {
+            if (stompClientRef.current) {
+                stompClientRef.current.disconnect();
+                stompClientRef.current = null;
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeConv]);
+    }, [activeConv, token]);
 
     useEffect(() => {
         scrollToBottom();
@@ -109,21 +124,17 @@ function Messages() {
         e.preventDefault();
         if (!typedMsg.trim() || !activeConv) return;
 
-        const payload = { content: typedMsg };
+        const content = typedMsg;
         setTypedMsg('');
 
-        axios.post(`http://localhost:8080/api/chat/conversations/${activeConv.id}/messages`, payload, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        chatService.sendMessage(activeConv.id, content)
         .then(res => {
-            if (res.data && res.data.success) {
-                setMessages(prev => [...prev, res.data.data]);
+            if (res && res.success) {
+                setMessages(prev => [...prev, res.data]);
                 // Refresh conversations list to update last message
-                axios.get(`http://localhost:8080/api/chat/conversations?isSeller=${isSellerMode}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
+                chatService.getConversations(isSellerMode)
                 .then(r => {
-                    if (r.data && r.data.success) setConversations(r.data.data || []);
+                    if (r && r.success) setConversations(r.data || []);
                 });
             }
         })

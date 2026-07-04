@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
 import { formatPrice, getProductImage, getOrderStatusLabel } from '../utils/helpers';
 import { useToast } from '../utils/toast';
 import { 
@@ -8,6 +7,9 @@ import {
   IconStore 
 } from '../utils/icons';
 import returnService from '../services/returnService';
+import sellerService from '../services/sellerService';
+import userService from '../services/userService';
+import categoryService from '../services/categoryService';
 import './SellerDashboard.css';
 
 function SellerDashboard() {
@@ -16,19 +18,14 @@ function SellerDashboard() {
     const [shop, setShop] = useState(null);
     const [activeTab, setActiveTab] = useState('analytics');
 
-    // Registration state
-    const [regName, setRegName] = useState('');
-    const [regSlug, setRegSlug] = useState('');
-    const [regDesc, setRegDesc] = useState('');
-    const [regLogo, setRegLogo] = useState('');
-    const [regBanner, setRegBanner] = useState('');
-
-    // Analytics state
+    // Stats / Lists state
     const [analytics, setAnalytics] = useState(null);
-
-    // Products state
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [shopReturns, setShopReturns] = useState([]);
+
+    // Modals & Forms state
     const [showProdModal, setShowProdModal] = useState(false);
     const [editingProd, setEditingProd] = useState(null);
     const [prodName, setProdName] = useState('');
@@ -40,11 +37,14 @@ function SellerDashboard() {
     const [prodImage, setProdImage] = useState('');
     const [prodCategoryId, setProdCategoryId] = useState('');
 
-    // Orders state
-    const [orders, setOrders] = useState([]);
+    // Register Shop Form state
+    const [regName, setRegName] = useState('');
+    const [regSlug, setRegSlug] = useState('');
+    const [regDesc, setRegDesc] = useState('');
+    const [regLogo, setRegLogo] = useState('');
+    const [regBanner, setRegBanner] = useState('');
 
-    // Return & Refund state
-    const [shopReturns, setShopReturns] = useState([]);
+    // Return response Form state
     const [showRespondModal, setShowRespondModal] = useState(false);
     const [selectedReturn, setSelectedReturn] = useState(null);
     const [responseNote, setResponseNote] = useState('');
@@ -55,21 +55,17 @@ function SellerDashboard() {
     const loadProfileAndShop = useCallback(() => {
         if (!token) return;
         
-        axios.get('http://localhost:8080/api/users/profile', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        userService.getProfile()
         .then(res => {
-            if (res.data && res.data.success) {
-                const userData = res.data.data;
+            if (res && res.success) {
+                const userData = res.data;
                 setUser(userData);
                 
                 if (userData.role === 'SELLER') {
-                    axios.get('http://localhost:8080/api/seller/shop', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
+                    sellerService.getShopInfo()
                     .then(sRes => {
-                        if (sRes.data && sRes.data.success) {
-                            setShop(sRes.data.data);
+                        if (sRes && sRes.success) {
+                            setShop(sRes.data);
                         }
                     })
                     .catch(err => console.error("Error loading shop:", err));
@@ -88,37 +84,31 @@ function SellerDashboard() {
         if (!shop || !token) return;
 
         if (activeTab === 'analytics') {
-            axios.get('http://localhost:8080/api/seller/analytics', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
+            sellerService.getAnalytics()
             .then(res => {
-                if (res.data && res.data.success) setAnalytics(res.data.data);
+                if (res && res.success) setAnalytics(res.data);
             })
             .catch(err => console.error(err));
         }
 
         if (activeTab === 'products') {
-            axios.get('http://localhost:8080/api/seller/products', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
+            sellerService.getProducts()
             .then(res => {
-                if (res.data && res.data.success) setProducts(res.data.data.content || []);
+                if (res && res.success) setProducts(res.data.content || []);
             })
             .catch(err => console.error(err));
 
-            axios.get('http://localhost:8080/api/categories')
+            categoryService.getAllCategories()
             .then(res => {
-                if (res.data && res.data.success) setCategories(res.data.data || []);
+                if (res && res.success) setCategories(res.data || []);
             })
             .catch(err => console.error(err));
         }
 
         if (activeTab === 'orders') {
-            axios.get('http://localhost:8080/api/seller/orders', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
+            sellerService.getOrders()
             .then(res => {
-                if (res.data && res.data.success) setOrders(res.data.data.content || []);
+                if (res && res.success) setOrders(res.data.content || []);
             })
             .catch(err => console.error(err));
         }
@@ -167,21 +157,18 @@ function SellerDashboard() {
 
         const payload = {
             name: regName,
-            slug: regSlug || regName.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-"),
+            slug: regSlug || regName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-"),
             description: regDesc,
             logoUrl: regLogo,
             bannerUrl: regBanner
         };
 
-        axios.post('http://localhost:8080/api/seller/register', payload, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        sellerService.registerShop(payload)
         .then(res => {
-            if (res.data && res.data.success) {
+            if (res && res.success) {
                 toast.success("Đăng ký người bán thành công!");
-                const u = JSON.parse(localStorage.getItem('user') || '{}');
-                u.role = 'SELLER';
-                localStorage.setItem('user', JSON.stringify(u));
+                localStorage.setItem('userRole', 'SELLER');
+                window.dispatchEvent(new Event('storage'));
                 loadProfileAndShop();
             }
         })
@@ -196,7 +183,7 @@ function SellerDashboard() {
         e.preventDefault();
         const payload = {
             name: prodName,
-            slug: prodSlug || prodName.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-"),
+            slug: prodSlug || prodName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-"),
             description: prodDesc,
             price: Number(prodPrice),
             salePrice: prodSalePrice ? Number(prodSalePrice) : null,
@@ -206,12 +193,12 @@ function SellerDashboard() {
         };
 
         const request = editingProd 
-            ? axios.put(`http://localhost:8080/api/seller/products/${editingProd.id}`, payload, { headers: { 'Authorization': `Bearer ${token}` } })
-            : axios.post('http://localhost:8080/api/seller/products', payload, { headers: { 'Authorization': `Bearer ${token}` } });
+            ? sellerService.updateProduct(editingProd.id, payload)
+            : sellerService.createProduct(payload);
 
         request
         .then(res => {
-            if (res.data && res.data.success) {
+            if (res && res.success) {
                 toast.success(editingProd ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!");
                 setShowProdModal(false);
                 setEditingProd(null);
@@ -255,11 +242,9 @@ function SellerDashboard() {
     // Handle Delete Product
     const handleDeleteProduct = (id) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này không?")) return;
-        axios.delete(`http://localhost:8080/api/seller/products/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        sellerService.deleteProduct(id)
         .then(res => {
-            if (res.data && res.data.success) {
+            if (res && res.success) {
                 toast.success("Xóa sản phẩm thành công!");
                 setProducts(prev => prev.filter(p => p.id !== id));
             }
@@ -272,11 +257,9 @@ function SellerDashboard() {
 
     // Handle Order Confirmation
     const handleConfirmOrder = (orderId) => {
-        axios.put(`http://localhost:8080/api/seller/orders/${orderId}/confirm`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        sellerService.confirmOrder(orderId)
         .then(res => {
-            if (res.data && res.data.success) {
+            if (res && res.success) {
                 toast.success("Đã xác nhận đơn hàng, đang giao hàng!");
                 setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'SHIPPING' } : o));
             }

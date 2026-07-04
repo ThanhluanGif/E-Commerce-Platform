@@ -39,7 +39,8 @@ export function getDiscountPercent(original, sale) {
 export function getProductImage(imageUrl) {
   if (!imageUrl) return '/no-image.png';
   if (imageUrl.startsWith('http')) return imageUrl;
-  return `http://localhost:8080${imageUrl}`;
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+  return `${apiBase}${imageUrl}`;
 }
 
 /**

@@ -35,6 +35,7 @@ api.interceptors.response.use(
       localStorage.removeItem('userId');
       localStorage.removeItem('username');
       localStorage.removeItem('userRole');
+      window.dispatchEvent(new Event('storage'));
       
       // Redirect to login if not already there
       if (window.location.pathname !== '/login') {

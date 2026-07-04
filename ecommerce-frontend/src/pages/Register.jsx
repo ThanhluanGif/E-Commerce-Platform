@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 function Register() {
     // 1. Khai báo các state để quản lý dữ liệu ô nhập
@@ -12,47 +13,30 @@ function Register() {
     const navigate = useNavigate();
 
     // 2. Hàm xử lý khi bấm nút Đăng Ký
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault(); // Chặn tải lại trang
 
-        // Cấu trúc JSON trùng khớp hoàn toàn với Backend Spring Boot
         const registerData = {
             username: username,
-            password: password, // Trùng khớp RequestBody Java
-            email: email,
-            role: "CUSTOMER" // Mặc định gán quyền CUSTOMER viết hoa
+            password: password,
+            email: email
         };
 
-        // 3. Gọi API Đăng ký sang Backend
-        fetch('http://localhost:8080/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(registerData)
-        })
-            .then(async (res) => {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'Đăng ký thất bại!');
-                }
-                return data;
-            })
-            .then((data) => {
-                setMessage('✅ Đăng ký tài khoản thành công!');
-                const luonMuonChuyenTrang = window.confirm('Đăng ký thành công! Bạn có muốn chuyển sang trang Đăng nhập ngay không?');
+        try {
+            await authService.register(registerData);
+            setMessage('✅ Đăng ký tài khoản thành công!');
+            const luonMuonChuyenTrang = window.confirm('Đăng ký thành công! Bạn có muốn chuyển sang trang Đăng nhập ngay không?');
 
-                if (luonMuonChuyenTrang) {
-                    navigate('/login');
-                } else {
-                    setUsername('');
-                    setPassword('');
-                    setEmail('');
-                }
-            })
-            .catch((err) => {
-                setMessage(`❌ Lỗi: ${err.message}`);
-            });
+            if (luonMuonChuyenTrang) {
+                navigate('/login');
+            } else {
+                setUsername('');
+                setPassword('');
+                setEmail('');
+            }
+        } catch (err) {
+            setMessage(`❌ Lỗi: ${err.response?.data?.message || err.message || 'Đăng ký thất bại!'}`);
+        }
     };
 
     return (

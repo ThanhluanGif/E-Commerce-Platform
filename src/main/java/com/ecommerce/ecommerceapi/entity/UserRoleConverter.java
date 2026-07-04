@@ -16,9 +16,9 @@ public class UserRoleConverter implements AttributeConverter<UserRole, String> {
         if (dbData == null) return UserRole.CUSTOMER;
         
         String clean = dbData.trim().toUpperCase();
-        if (clean.contains("ADMIN")) {
+        if (clean.equals("ADMIN")) {
             return UserRole.ADMIN;
-        } else if (clean.contains("SELLER")) {
+        } else if (clean.equals("SELLER")) {
             return UserRole.SELLER;
         }
         return UserRole.CUSTOMER; // Mặc định tất cả các quyền khác về CUSTOMER

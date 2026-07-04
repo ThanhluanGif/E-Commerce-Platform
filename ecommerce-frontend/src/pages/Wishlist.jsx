@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import UserLayout from '../components/UserLayout';
 import ProductCard from '../components/ProductCard';
 import { useToast } from '../utils/toast';
@@ -19,9 +19,7 @@ function Wishlist() {
         setLoading(true);
         
         // Fetch regular wishlist
-        axios.get('http://localhost:8080/api/users/wishlist', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        api.get('/api/users/wishlist')
         .then(res => {
             if (res.data && res.data.success) {
                 setWishlist(res.data.data || []);
@@ -35,9 +33,7 @@ function Wishlist() {
         });
 
         // Fetch wishlist items currently on active Flash Sale
-        axios.get('http://localhost:8080/api/users/wishlist/flash-sales', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        api.get('/api/users/wishlist/flash-sales')
         .then(res => {
             if (res.data && res.data.success) {
                 setFlashSaleSuggestions(res.data.data || []);
@@ -61,9 +57,7 @@ function Wishlist() {
     const handleRemove = (productId, e) => {
         e.preventDefault(); // Prevent linking
         e.stopPropagation();
-        axios.delete(`http://localhost:8080/api/users/wishlist/${productId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
+        api.delete(`/api/users/wishlist/${productId}`)
         .then(res => {
             if (res.data && res.data.success) {
                 setWishlist(prev => prev.filter(p => p.id !== productId));
