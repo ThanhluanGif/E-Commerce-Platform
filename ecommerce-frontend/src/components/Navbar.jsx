@@ -1,19 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api';
 import {
   IconSearch, IconCart, IconUser, IconBell, IconHeart,
   IconMessage, IconStore, IconPackage, IconLogout,
-  IconDashboard, IconChevronDown, IconSettings
+  IconDashboard, IconChevronDown, IconSettings, IconTrash
 } from '../utils/icons';
 import './Navbar.css';
 
 function Navbar() {
-    const { cartItems } = React.useContext(CartContext);
-    const { isAuthenticated, username, isAdmin, logout } = React.useContext(AuthContext);
+    const { cartItems } = useContext(CartContext);
+    const { isAuthenticated, username, isAdmin, logout } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [navSearch, setNavSearch] = React.useState('');
+    const [navSearch, setNavSearch] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [history, setHistory] = useState([]);
+    
+    const searchRef = useRef(null);
 
     const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -22,12 +28,86 @@ function Navbar() {
         navigate('/login');
     };
 
+    // Fetch search history from backend
+    const fetchHistory = () => {
+        if (!isAuthenticated) return;
+        api.get('/api/search/history')
+            .then(res => {
+                if (res && res.data && res.data.success) {
+                    setHistory(res.data.data || []);
+                }
+            })
+            .catch(err => console.error("Error loading search history:", err));
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchHistory();
+        } else {
+            setHistory([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]);
+
+    // Autocomplete query with 300ms debounce
+    useEffect(() => {
+        if (navSearch.trim() === '') {
+            setSuggestions([]);
+            return;
+        }
+
+        const delayDebounce = setTimeout(() => {
+            api.get(`/api/search/suggestions?q=${encodeURIComponent(navSearch.trim())}`)
+                .then(res => {
+                    if (res && res.data && res.data.success) {
+                        setSuggestions(res.data.data || []);
+                    }
+                })
+                .catch(err => console.error("Error fetching search suggestions:", err));
+        }, 300);
+
+        return () => clearTimeout(delayDebounce);
+    }, [navSearch]);
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        if (navSearch.trim() !== '') {
-            navigate(`/products?name=${encodeURIComponent(navSearch.trim())}`);
-            setNavSearch('');
+        handleSearch(navSearch);
+    };
+
+    const handleSearch = (query) => {
+        if (!query.trim()) return;
+        const cleanQuery = query.trim();
+
+        // Save to search history (silently)
+        if (isAuthenticated) {
+            api.post(`/api/search/history?query=${encodeURIComponent(cleanQuery)}`)
+                .then(() => fetchHistory())
+                .catch(err => console.error(err));
         }
+
+        navigate(`/products?name=${encodeURIComponent(cleanQuery)}`);
+        setShowDropdown(false);
+        setNavSearch('');
+    };
+
+    const handleClearHistory = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isAuthenticated) return;
+        api.delete('/api/search/history')
+            .then(() => setHistory([]))
+            .catch(err => console.error(err));
     };
 
     return (
@@ -119,7 +199,7 @@ function Navbar() {
                     </Link>
 
                     {/* Search Bar */}
-                    <div className="header-search">
+                    <div className="header-search" ref={searchRef}>
                         <form onSubmit={handleSearchSubmit} className="header-search-form">
                             <input
                                 type="text"
@@ -127,11 +207,59 @@ function Navbar() {
                                 placeholder="Tìm kiếm sản phẩm, thương hiệu, và cửa hàng..."
                                 value={navSearch}
                                 onChange={(e) => setNavSearch(e.target.value)}
+                                onFocus={() => setShowDropdown(true)}
                             />
                             <button type="submit" className="header-search-btn">
                                 <IconSearch size={18} />
                             </button>
                         </form>
+
+                        {showDropdown && (suggestions.length > 0 || (navSearch.trim() === '' && history.length > 0)) && (
+                            <div className="search-dropdown">
+                                {/* Case 1: Suggestions */}
+                                {navSearch.trim() !== '' && suggestions.length > 0 && (
+                                    <div className="search-dropdown-section">
+                                        <div className="search-dropdown-title">Gợi ý tìm kiếm</div>
+                                        {suggestions.map((s, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                className="search-dropdown-item"
+                                                onClick={() => handleSearch(s)}
+                                            >
+                                                <span className="search-icon-inline"><IconSearch size={14} /></span>
+                                                <span>{s}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Case 2: History */}
+                                {navSearch.trim() === '' && history.length > 0 && (
+                                    <div className="search-dropdown-section">
+                                        <div className="search-dropdown-title">
+                                            <span>Lịch sử tìm kiếm</span>
+                                            <button 
+                                                onClick={handleClearHistory} 
+                                                className="search-clear-history-btn"
+                                            >
+                                                <IconTrash size={12} style={{ marginRight: '4px' }} />
+                                                Xóa lịch sử
+                                            </button>
+                                        </div>
+                                        {history.map((h) => (
+                                            <div 
+                                                key={h.id} 
+                                                className="search-dropdown-item"
+                                                onClick={() => handleSearch(h.queryText)}
+                                            >
+                                                <span className="search-icon-inline"><IconSearch size={14} /></span>
+                                                <span>{h.queryText}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <div className="header-keywords">
                             <Link to="/products?name=Laptop" className="header-keyword">Laptop</Link>
                             <Link to="/products?name=Điện thoại" className="header-keyword">Điện thoại</Link>

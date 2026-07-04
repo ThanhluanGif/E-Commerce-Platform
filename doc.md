@@ -182,7 +182,7 @@ erDiagram
 
 ---
 
-## 5. Kế Hoạch Khắc Phục Lỗ Hổng (Phase 10A)
+## 5. Kế Hoạch Khắc Phục Lỗ Hổng (Phase 10A) - ✅ HOÀN THÀNH
 
 > **Mục tiêu chính:** Vá triệt để các lỗ hổng bảo mật nghiêm trọng (Critical) và cấu trúc lại mã nguồn lỗi (Refactor) để đảm bảo hệ thống vận hành an toàn và ổn định.
 > **Thời gian dự kiến:** 3 - 4 ngày.
@@ -230,7 +230,7 @@ erDiagram
 > **Mục tiêu:** Nâng cấp các tính năng phụ trợ quan trọng giúp hệ thống tiệm cận hơn với tiêu chuẩn trải nghiệm của các sàn TMĐT lớn.
 > **Thời gian dự kiến:** 5 - 7 ngày.
 
-### Phase 10B: Tìm kiếm nâng cao & Tối ưu hóa trải nghiệm tìm kiếm
+### Phase 10B: Tìm kiếm nâng cao & Tối ưu hóa trải nghiệm tìm kiếm - ✅ HOÀN THÀNH
 * **Backend:**
   - Triển khai giải pháp MySQL Full-Text Search hoặc sử dụng `Specification` của JPA để hỗ trợ tìm kiếm nâng cao theo nhiều tiêu chí kết hợp (khoảng giá, danh mục con, đánh giá sao, nhãn sản phẩm).
   - Tạo bảng lưu lịch sử tìm kiếm của người dùng (`SearchHistory`) để phục vụ tính năng cá nhân hóa gợi ý sản phẩm.
@@ -238,7 +238,7 @@ erDiagram
   - Thêm tính năng gợi ý từ khóa (Autocomplete) khi người dùng gõ trên thanh tìm kiếm của Navbar (áp dụng kỹ thuật `debounce` 300ms để tránh spam request lên server).
   - Xây dựng giao diện trang `/search` hiển thị kết quả kèm bộ lọc chi tiết dạng sidebar.
 
-### Phase 10C: Xây dựng Design System & Thư viện Component dùng chung
+### Phase 10C: Xây dựng Design System & Thư viện Component dùng chung - ✅ HOÀN THÀNH
 * **Frontend:**
   - Tập hợp toàn bộ CSS Variables định nghĩa màu sắc chủ đạo, khoảng cách (spacing), font chữ, độ bo góc vào file `src/styles/tokens.css` để dễ dàng bảo trì hoặc chuyển đổi giao diện Dark/Light mode sau này.
   - Xây dựng thư mục component dùng chung `src/components/ui/` bao gồm:
@@ -254,7 +254,7 @@ erDiagram
 
 ---
 
-## 7. Kế Hoạch Triển Khai DevOps & Production (Phase 11)
+## 7. Kế Hoạch Triển Khai DevOps & Production (Phase 11) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Chuẩn bị môi trường sản xuất (Production Ready) cho toàn bộ hệ thống giúp quá trình vận hành lâu dài ổn định, an toàn và dễ bảo trì.
 > **Thời gian dự kiến:** 5 ngày.

@@ -46,4 +46,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             @Param("active") Boolean active,
             Pageable pageable
     );
+
+    @Query("SELECT DISTINCT p.name FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))")
+    List<String> getSearchSuggestions(@Param("q") String q, Pageable pageable);
 }
