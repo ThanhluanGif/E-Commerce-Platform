@@ -624,10 +624,10 @@ erDiagram
 - [x] Kiểm soát tồn kho theo variant khi đặt hàng
 
 #### Hoàn Hàng & Trả Hàng (Return & Refund)
-- [ ] Entity `ReturnRequest` (reason, images, status)
-- [ ] API tạo yêu cầu hoàn hàng (sau khi đơn DELIVERED)
-- [ ] Seller xử lý yêu cầu hoàn hàng
-- [ ] Admin duyệt hoàn tiền
+- [x] Entity `ReturnRequest` (reason, images, status)
+- [x] API tạo yêu cầu hoàn hàng (sau khi đơn DELIVERED)
+- [x] Seller xử lý yêu cầu hoàn hàng
+- [x] Admin duyệt hoàn tiền
 
 #### Tìm Kiếm Nâng Cao
 - [ ] Tích hợp MySQL Full-Text Index (tạm thời) hoặc Elasticsearch
