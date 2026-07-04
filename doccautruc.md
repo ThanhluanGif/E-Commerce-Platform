@@ -615,7 +615,7 @@ erDiagram
 - [x] Entity `Wishlist` (user + product)
 - [x] Nút ❤️ trên card sản phẩm (toggle)
 - [x] Trang `/wishlist` — Danh sách yêu thích
-- [ ] Gợi ý mua khi sản phẩm trong wishlist có Flash Sale
+- [x] Gợi ý mua khi sản phẩm trong wishlist có Flash Sale
 
 #### Biến Thể Sản Phẩm (Variants/SKU)
 - [x] Entity `ProductVariant` (sku, màu, size, giá riêng, tồn kho riêng)
