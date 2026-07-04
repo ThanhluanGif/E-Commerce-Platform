@@ -529,25 +529,25 @@ erDiagram
 > **Ưu tiên:** 🔴 Cao nhất | **Ước lượng:** 7–10 ngày
 
 #### Backend
-- [ ] Thêm `SELLER` vào `UserRole` enum
-- [ ] Tạo entity `Shop` với đầy đủ fields (name, slug, logo, banner, is_verified)
-- [ ] `ShopRepository`, `ShopService`, `SellerController`, `ShopController`
-- [ ] Endpoint đăng ký trở thành Seller (user → seller + tạo shop)
-- [ ] CRUD sản phẩm riêng của Seller (kiểm tra shop ownership)
-- [ ] Quản lý đơn hàng phía Seller (xác nhận, đánh dấu giao hàng)
-- [ ] API thống kê doanh thu của shop (doanh thu, đơn hàng, sản phẩm bán chạy)
-- [ ] Endpoint public trang shop (`/api/shops/{slug}`)
-- [ ] Admin phê duyệt shop mới (`PUT /api/admin/shops/{id}/approve`)
+- [x] Thêm `SELLER` vào `UserRole` enum
+- [x] Tạo entity `Shop` với đầy đủ fields (name, slug, logo, banner, is_verified)
+- [x] `ShopRepository`, `ShopService`, `SellerController`, `ShopController`
+- [x] Endpoint đăng ký trở thành Seller (user → seller + tạo shop)
+- [x] CRUD sản phẩm riêng của Seller (kiểm tra shop ownership)
+- [x] Quản lý đơn hàng phía Seller (xác nhận, đánh dấu giao hàng)
+- [x] API thống kê doanh thu của shop (doanh thu, đơn hàng, sản phẩm bán chạy)
+- [x] Endpoint public trang shop (`/api/shops/{slug}`)
+- [x] Admin phê duyệt shop mới (`PUT /api/admin/shops/{id}/approve`)
 
 #### Frontend
-- [ ] Route `/seller/*` với `SellerLayout` (sidebar riêng biệt)
-- [ ] Trang `/seller/dashboard` — Tổng quan shop (thống kê, đơn mới)
-- [ ] Trang `/seller/products` — Quản lý sản phẩm (CRUD với upload ảnh)
-- [ ] Trang `/seller/orders` — Đơn hàng nhận được + cập nhật trạng thái
-- [ ] Trang `/seller/analytics` — Biểu đồ doanh thu, top sản phẩm
-- [ ] Trang `/shop/:slug` — Trang gian hàng public (banner, logo, sản phẩm, đánh giá)
-- [ ] Nút "Theo dõi Shop" trên trang gian hàng
-- [ ] Nút "Liên hệ người bán" (mở chat từ trang chi tiết sản phẩm)
+- [x] Route `/seller/*` với `SellerLayout` (sidebar riêng biệt)
+- [x] Trang `/seller/dashboard` — Tổng quan shop (thống kê, đơn mới)
+- [x] Trang `/seller/products` — Quản lý sản phẩm (CRUD với upload ảnh)
+- [x] Trang `/seller/orders` — Đơn hàng nhận được + cập nhật trạng thái
+- [x] Trang `/seller/analytics` — Biểu đồ doanh thu, top sản phẩm
+- [x] Trang `/shop/:slug` — Trang gian hàng public (banner, logo, sản phẩm, đánh giá)
+- [x] Nút "Theo dõi Shop" trên trang gian hàng
+- [x] Nút "Liên hệ người bán" (mở chat từ trang chi tiết sản phẩm)
 
 ---
 
@@ -555,22 +555,22 @@ erDiagram
 > **Ưu tiên:** 🔴 Cao | **Ước lượng:** 5–7 ngày
 
 #### Backend
-- [ ] Entity `Voucher`, `UserVoucher` với đầy đủ loại (PERCENT, FIXED, SHIPPING)
-- [ ] Entity `FlashSale`, `FlashSaleItem`
-- [ ] `VoucherService` — validate, apply voucher khi checkout
-- [ ] `FlashSaleService` — kiểm tra thời gian, giới hạn số lượng (dùng Redis lock nếu có)
-- [ ] Tích hợp voucher vào `OrderService.createOrder()` → trừ tiền tự động
-- [ ] API lấy voucher có thể dùng cho đơn hàng hiện tại
-- [ ] Scheduled task tự động bật/tắt Flash Sale (`@Scheduled`)
-- [ ] Admin CRUD voucher và flash sale
+- [x] Entity `Voucher`, `UserVoucher` với đầy đủ loại (PERCENT, FIXED, SHIPPING)
+- [x] Entity `FlashSale`, `FlashSaleItem`
+- [x] `VoucherService` — validate, apply voucher khi checkout
+- [x] `FlashSaleService` — kiểm tra thời gian, giới hạn số lượng (dùng Redis lock nếu có)
+- [x] Tích hợp voucher vào `OrderService.createOrder()` → trừ tiền tự động
+- [x] API lấy voucher có thể dùng cho đơn hàng hiện tại
+- [x] Scheduled task tự động bật/tắt Flash Sale (`@Scheduled`)
+- [x] Admin CRUD voucher và flash sale
 
 #### Frontend
-- [ ] Banner Flash Sale nổi bật + countdown timer trên trang Home
-- [ ] Trang `/flash-sale` — Danh sách sản phẩm flash sale + đếm ngược
-- [ ] Modal chọn & áp dụng voucher trong Checkout (hiển thị voucher khả dụng)
-- [ ] Trang `/vouchers` — Kho voucher của tôi (thu thập, trạng thái)
-- [ ] Admin UI: Quản lý Voucher & Flash Sale trong `/admin`
-- [ ] Hiển thị tag "FLASH SALE" / "% OFF" trên card sản phẩm
+- [x] Banner Flash Sale nổi bật + countdown timer trên trang Home
+- [x] Trang `/flash-sale` — Danh sách sản phẩm flash sale + đếm ngược
+- [x] Modal chọn & áp dụng voucher trong Checkout (hiển thị voucher khả dụng)
+- [x] Trang `/vouchers` — Kho voucher của tôi (thu thập, trạng thái)
+- [x] Admin UI: Quản lý Voucher & Flash Sale trong `/admin`
+- [x] Hiển thị tag "FLASH SALE" / "% OFF" trên card sản phẩm
 
 ---
 
@@ -578,27 +578,27 @@ erDiagram
 > **Ưu tiên:** 🟡 Trung bình | **Ước lượng:** 7–10 ngày
 
 #### Backend — Notification
-- [ ] Entity `Notification`, `NotificationSettings`
-- [ ] `NotificationService` — tạo & lưu thông báo
-- [ ] Trigger thông báo trong: `OrderService`, `PaymentService`, `FlashSaleService`
-- [ ] Server-Sent Events (SSE) endpoint để push realtime đến browser
-- [ ] Email notification dùng Spring Mail (JavaMailSender) — xác nhận đơn hàng
+- [x] Entity `Notification`, `NotificationSettings`
+- [x] `NotificationService` — tạo & lưu thông báo
+- [x] Trigger thông báo trong: `OrderService`, `PaymentService`, `FlashSaleService`
+- [x] Server-Sent Events (SSE) endpoint để push realtime đến browser
+- [x] Email notification dùng Spring Mail (JavaMailSender) — xác nhận đơn hàng
 
 #### Backend — Chat
-- [ ] Cấu hình Spring WebSocket + STOMP
-- [ ] Entity `ChatConversation`, `ChatMessage`
-- [ ] `ChatController` xử lý WebSocket message (gửi, nhận, đánh dấu đọc)
-- [ ] REST API quản lý hội thoại (danh sách, lịch sử tin nhắn)
-- [ ] Upload ảnh trong chat (tái sử dụng `/api/upload`)
+- [x] Cấu hình Spring WebSocket + STOMP
+- [x] Entity `ChatConversation`, `ChatMessage`
+- [x] `ChatController` xử lý WebSocket message (gửi, nhận, đánh dấu đọc)
+- [x] REST API quản lý hội thoại (danh sách, lịch sử tin nhắn)
+- [x] Upload ảnh trong chat (tái sử dụng `/api/upload`)
 
 #### Frontend
-- [ ] Icon chuông 🔔 trên Navbar với badge đếm chưa đọc (realtime SSE)
-- [ ] Dropdown thông báo realtime (top 5 gần nhất)
-- [ ] Trang `/notifications` — Tất cả thông báo + phân trang
-- [ ] Icon chat 💬 nổi (floating) khi ở trang sản phẩm → liên hệ seller
-- [ ] Trang `/messages` — Danh sách hội thoại
-- [ ] Giao diện chat realtime (bubble messages, timestamp, trạng thái đã đọc)
-- [ ] Seller thấy thông báo chat mới trong dashboard
+- [x] Icon chuông 🔔 trên Navbar với badge đếm chưa đọc (realtime SSE)
+- [x] Dropdown thông báo realtime (top 5 gần nhất)
+- [x] Trang `/notifications` — Tất cả thông báo + phân trang
+- [x] Icon chat 💬 nổi (floating) khi ở trang sản phẩm → liên hệ seller
+- [x] Trang `/messages` — Danh sách hội thoại
+- [x] Giao diện chat realtime (bubble messages, timestamp, trạng thái đã đọc)
+- [x] Seller thấy thông báo chat mới trong dashboard
 
 ---
 
@@ -606,15 +606,15 @@ erDiagram
 > **Ưu tiên:** 🟢 Dài hạn | **Ước lượng:** 10–14 ngày
 
 #### Sổ địa chỉ (Address Book)
-- [ ] Entity `Address` riêng biệt (thay TEXT hiện tại trong User)
-- [ ] API CRUD địa chỉ + đặt mặc định
+- [x] Entity `Address` riêng biệt (thay TEXT hiện tại trong User)
+- [x] API CRUD địa chỉ + đặt mặc định
 - [ ] Checkout tự điền địa chỉ mặc định từ sổ địa chỉ
 - [ ] Gợi ý địa chỉ từ danh sách đã lưu khi checkout
 
 #### Wishlist (Yêu thích)
-- [ ] Entity `Wishlist` (user + product)
-- [ ] Nút ❤️ trên card sản phẩm (toggle)
-- [ ] Trang `/wishlist` — Danh sách yêu thích
+- [x] Entity `Wishlist` (user + product)
+- [x] Nút ❤️ trên card sản phẩm (toggle)
+- [x] Trang `/wishlist` — Danh sách yêu thích
 - [ ] Gợi ý mua khi sản phẩm trong wishlist có Flash Sale
 
 #### Biến Thể Sản Phẩm (Variants/SKU)
@@ -674,10 +674,10 @@ gantt
 | Phase | Nội dung | Backend | Frontend | Trạng thái |
 |-------|----------|---------|----------|------------|
 | Phase 1–6 | MVP Core | ✅ | ✅ | ✅ Hoàn thành |
-| **Phase 7** | **Seller Center & Gian hàng** | ⬜ | ⬜ | ⬜ Chưa bắt đầu |
-| **Phase 8** | **Voucher & Flash Sale** | ⬜ | ⬜ | ⬜ Chưa bắt đầu |
-| **Phase 9** | **Chat & Notification Realtime** | ⬜ | ⬜ | ⬜ Chưa bắt đầu |
-| **Phase 10** | **Scale, Address, Variant, DevOps** | ⬜ | ⬜ | ⬜ Chưa bắt đầu |
+| **Phase 7** | **Seller Center & Gian hàng** | ✅ | ✅ | ✅ Hoàn thành |
+| **Phase 8** | **Voucher & Flash Sale** | ✅ | ✅ | ✅ Hoàn thành |
+| **Phase 9** | **Chat & Notification Realtime** | ✅ | ✅ | ✅ Hoàn thành |
+| **Phase 10** | **Scale, Address, Variant, DevOps** | 🔵 | 🔵 | 🔵 Đang làm |
 
 ### Quy ước trạng thái
 - ⬜ Chưa bắt đầu
