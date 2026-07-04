@@ -42,7 +42,7 @@ function ShopPage() {
     }, [slug]);
 
     const handleChat = () => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
         if (!token) {
             navigate('/login');
             return;

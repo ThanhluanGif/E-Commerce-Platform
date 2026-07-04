@@ -20,9 +20,12 @@ function Messages() {
     const [loadingConvs, setLoadingConvs] = useState(true);
     const [loadingMsgs, setLoadingMsgs] = useState(false);
 
-    const token = localStorage.getItem('token');
-    const userJson = localStorage.getItem('user'); 
-    const currentUser = userJson ? JSON.parse(userJson) : null;
+    const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
+    const currentUser = {
+        id: Number(localStorage.getItem('userId')),
+        username: localStorage.getItem('username'),
+        role: localStorage.getItem('userRole')
+    };
 
     const messagesEndRef = useRef(null);
 

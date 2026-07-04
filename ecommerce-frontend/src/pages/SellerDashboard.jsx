@@ -42,7 +42,7 @@ function SellerDashboard() {
     // Orders state
     const [orders, setOrders] = useState([]);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
 
     // Load initial profile & shop (Wrapped in useCallback to prevent missing dependency warnings)
     const loadProfileAndShop = useCallback(() => {

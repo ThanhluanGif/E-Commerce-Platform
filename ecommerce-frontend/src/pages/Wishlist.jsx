@@ -12,7 +12,7 @@ function Wishlist() {
     const [error, setError] = useState('');
     const toast = useToast();
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
 
     const fetchWishlist = () => {
         setLoading(true);
