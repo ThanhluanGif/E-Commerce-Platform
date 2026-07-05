@@ -120,6 +120,26 @@
   --sidebar-width: 240px;
 }
 
+[data-theme='dark'] {
+  --color-white: #121212;
+  --color-gray-50: #1a1a1a;
+  --color-gray-100: #252525;
+  --color-gray-200: #2f2f2f;
+  --color-gray-300: #3a3a3a;
+  --color-gray-400: #5a5a5a;
+  --color-gray-500: #888888;
+  --color-gray-600: #aaaaaa;
+  --color-gray-700: #cccccc;
+  --color-gray-800: #e0e0e0;
+  --color-gray-900: #ffffff;
+  --color-black: #ffffff;
+  
+  /* Additional shadow adjustments for dark background */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+
 /* ============================================================
    2. RESET & BASE
    ============================================================ */

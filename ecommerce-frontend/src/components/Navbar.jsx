@@ -10,11 +10,13 @@ import {
   IconDashboard, IconChevronDown, IconSettings, IconTrash,
   IconGift
 } from '../utils/icons';
+import { AppContext } from '../context/AppContext';
 import './Navbar.css';
 
 function Navbar() {
     const { cartItems } = useContext(CartContext);
     const { isAuthenticated, username, isAdmin, logout } = useContext(AuthContext);
+    const { theme, toggleTheme, lang, setLang, t } = useContext(AppContext);
     const navigate = useNavigate();
     const [navSearch, setNavSearch] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
@@ -120,7 +122,7 @@ function Navbar() {
                     <div className="topbar-left">
                         <Link to="/seller" className="topbar-link">
                             <IconStore size={14} />
-                            <span>Kênh Người Bán</span>
+                            <span>{t('seller_center')}</span>
                         </Link>
                         <span className="topbar-divider hide-mobile" />
                         <span className="topbar-link hide-mobile">Tải ứng dụng</span>
@@ -129,6 +131,18 @@ function Navbar() {
                     </div>
 
                     <div className="topbar-right">
+                        {/* Theme Toggle */}
+                        <span className="topbar-link" onClick={toggleTheme} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {theme === 'light' ? '🌙 ' + t('dark_mode') : '☀️ ' + t('light_mode')}
+                        </span>
+                        <span className="topbar-divider" />
+
+                        {/* Language Selector */}
+                        <span className="topbar-link" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')} style={{ cursor: 'pointer', fontWeight: 600 }}>
+                            {lang === 'vi' ? '🇬🇧 EN' : '🇻🇳 VI'}
+                        </span>
+                        <span className="topbar-divider" />
+
                         <NotificationBell />
                         <span className="topbar-divider hide-mobile" />
                         <span className="topbar-link hide-mobile">Trợ Giúp</span>
@@ -156,33 +170,33 @@ function Navbar() {
                                         <IconMessage size={16} /> Tin nhắn
                                     </Link>
                                     <Link to="/loyalty" className="topbar-dropdown-item">
-                                        <IconGift size={16} /> Khách hàng thân thiết
+                                        <IconGift size={16} /> {t('loyalty')}
                                     </Link>
                                     {isAdmin && (
                                         <>
                                             <div className="topbar-dropdown-divider" />
                                             <Link to="/admin" className="topbar-dropdown-item">
-                                                <IconDashboard size={16} /> Quản trị Admin
+                                                <IconDashboard size={16} /> {t('admin_dashboard')}
                                             </Link>
                                         </>
                                     )}
                                     <Link to="/seller" className="topbar-dropdown-item">
-                                        <IconStore size={16} /> Kênh Người Bán
+                                        <IconStore size={16} /> {t('seller_center')}
                                     </Link>
                                     <div className="topbar-dropdown-divider" />
                                     <Link to="/profile" className="topbar-dropdown-item">
                                         <IconSettings size={16} /> Cài đặt
                                     </Link>
                                     <div className="topbar-dropdown-item" onClick={handleLogout}>
-                                        <IconLogout size={16} /> Đăng xuất
+                                        <IconLogout size={16} /> {t('logout')}
                                     </div>
                                 </div>
-                            </div>
+                             </div>
                         ) : (
                             <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-                                <Link to="/register" className="topbar-link" style={{ fontWeight: 600 }}>Đăng Ký</Link>
+                                <Link to="/register" className="topbar-link" style={{ fontWeight: 600 }}>{t('register')}</Link>
                                 <span className="topbar-divider" />
-                                <Link to="/login" className="topbar-link" style={{ fontWeight: 600 }}>Đăng Nhập</Link>
+                                <Link to="/login" className="topbar-link" style={{ fontWeight: 600 }}>{t('login')}</Link>
                             </div>
                         )}
                     </div>
@@ -206,7 +220,7 @@ function Navbar() {
                             <input
                                 type="text"
                                 className="header-search-input"
-                                placeholder="Tìm kiếm sản phẩm, thương hiệu, và cửa hàng..."
+                                placeholder={t('search_placeholder')}
                                 value={navSearch}
                                 onChange={(e) => setNavSearch(e.target.value)}
                                 onFocus={() => setShowDropdown(true)}

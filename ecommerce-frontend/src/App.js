@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './utils/toast';
 import { NotificationProvider } from './context/NotificationContext';
+import { AppProvider } from './context/AppContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Home from './pages/Home';
 import ProductList from './pages/ProductList';
@@ -29,12 +30,12 @@ import Loyalty from './pages/Loyalty';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
-
 function App() {
     return (
-        <ToastProvider>
-            <NotificationProvider>
-                <ErrorBoundary>
+        <AppProvider>
+            <ToastProvider>
+                <NotificationProvider>
+                    <ErrorBoundary>
                     <Router>
                 <Routes>
                     <Route element={<MainLayout />}>
@@ -76,9 +77,10 @@ function App() {
                     </Route>
                 </Routes>
                     </Router>
-                </ErrorBoundary>
-            </NotificationProvider>
-        </ToastProvider>
+                    </ErrorBoundary>
+                </NotificationProvider>
+            </ToastProvider>
+        </AppProvider>
     );
 }
 
