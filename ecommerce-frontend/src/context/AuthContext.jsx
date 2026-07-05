@@ -58,6 +58,30 @@ export const AuthProvider = ({ children }) => {
     window.dispatchEvent(new Event('storage'));
   };
 
+  // Idle session timeout (30 minutes)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timeoutId;
+    const updateActivity = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout();
+        alert("Phiên làm việc của bạn đã hết hạn do không hoạt động trong 30 phút. Vui lòng đăng nhập lại!");
+      }, 1800000); // 30 mins
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, updateActivity));
+
+    updateActivity();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, updateActivity));
+    };
+  }, [isAuthenticated]);
+
   return (
     <AuthContext.Provider value={{ token, refreshToken, userId, username, userRole, isAuthenticated, isAdmin, login, logout }}>
       {children}

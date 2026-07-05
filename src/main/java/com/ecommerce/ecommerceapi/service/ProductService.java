@@ -36,6 +36,9 @@ public class ProductService {
     // Thêm mới hoặc Cập nhật sản phẩm
     @CacheEvict(value = "products", key = "#product.id", condition = "#product.id != null")
     public Product saveProduct(Product product) {
+        if (product.getDescription() != null) {
+            product.setDescription(com.ecommerce.ecommerceapi.security.XssSanitizer.sanitize(product.getDescription()));
+        }
         return productRepository.save(product);
     }
 
