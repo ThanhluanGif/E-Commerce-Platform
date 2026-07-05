@@ -10,6 +10,7 @@ import returnService from '../services/returnService';
 import sellerService from '../services/sellerService';
 import userService from '../services/userService';
 import categoryService from '../services/categoryService';
+import api from '../services/api';
 import './SellerDashboard.css';
 
 function SellerDashboard() {
@@ -20,6 +21,7 @@ function SellerDashboard() {
 
     // Stats / Lists state
     const [analytics, setAnalytics] = useState(null);
+    const [shopRevenue30, setShopRevenue30] = useState(0);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [orders, setOrders] = useState([]);
@@ -87,6 +89,14 @@ function SellerDashboard() {
             sellerService.getAnalytics()
             .then(res => {
                 if (res && res.success) setAnalytics(res.data);
+            })
+            .catch(err => console.error(err));
+
+            api.get('/api/analytics/shop')
+            .then(res => {
+                if (res.data && res.data.success && res.data.data) {
+                    setShopRevenue30(res.data.data.shopRevenue30Days || 0);
+                }
             })
             .catch(err => console.error(err));
         }
@@ -396,6 +406,53 @@ function SellerDashboard() {
                                 <div className="stat-info">
                                     <span className="stat-value">Active</span>
                                     <span className="stat-label">Trạng thái shop</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Comparative Revenue Chart */}
+                        <div style={{ marginTop: '30px', padding: '20px', backgroundColor: 'var(--color-gray-50)', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--border-radius-sm)' }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-gray-800)', marginBottom: '15px' }}>Biểu đồ doanh thu so sánh</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <span style={{ fontSize: '13px', color: 'var(--color-gray-600)', minWidth: '120px' }}>30 ngày gần đây:</span>
+                                    <div style={{ flex: 1, backgroundColor: 'var(--color-gray-200)', height: '24px', borderRadius: '12px', overflow: 'hidden' }}>
+                                        <div style={{ 
+                                            width: shopRevenue30 > 0 ? '100%' : '5%', 
+                                            backgroundColor: 'var(--color-primary)', 
+                                            height: '100%', 
+                                            borderRadius: '12px', 
+                                            transition: 'width 0.5s ease-out',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            paddingLeft: '15px',
+                                            color: '#fff',
+                                            fontSize: '11px',
+                                            fontWeight: '700'
+                                        }}>
+                                            {formatPrice(shopRevenue30)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <span style={{ fontSize: '13px', color: 'var(--color-gray-600)', minWidth: '120px' }}>Tổng doanh thu:</span>
+                                    <div style={{ flex: 1, backgroundColor: 'var(--color-gray-200)', height: '24px', borderRadius: '12px', overflow: 'hidden' }}>
+                                        <div style={{ 
+                                            width: analytics.totalRevenue > 0 ? `${Math.min(100, Math.floor((shopRevenue30 / analytics.totalRevenue) * 100))}%` : '5%', 
+                                            backgroundColor: '#3b82f6', 
+                                            height: '100%', 
+                                            borderRadius: '12px', 
+                                            transition: 'width 0.5s ease-out',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            paddingLeft: '15px',
+                                            color: '#fff',
+                                            fontSize: '11px',
+                                            fontWeight: '700'
+                                        }}>
+                                            {formatPrice(analytics.totalRevenue)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

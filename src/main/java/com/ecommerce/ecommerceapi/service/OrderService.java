@@ -49,6 +49,9 @@ public class OrderService {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private LoyaltyService loyaltyService;
+
     public Order createOrder(Integer userId, OrderRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
@@ -129,11 +132,32 @@ public class OrderService {
             orderItems.add(orderItem);
         }
 
-        order.setTotalPrice(totalPrice);
+        // Tính toán tổng tiền cuối cùng bao gồm chiết khấu và giảm giá qua xu thành viên
+        BigDecimal shippingFee = totalPrice.compareTo(BigDecimal.valueOf(500000)) > 0 ? BigDecimal.ZERO : BigDecimal.valueOf(30000);
+        BigDecimal finalTotal = totalPrice.add(shippingFee);
+
+        if (request.getDiscountAmount() != null) {
+            finalTotal = finalTotal.subtract(request.getDiscountAmount());
+        }
+
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+
+        order.setTotalPrice(finalTotal);
         order.setOrderItems(orderItems);
 
         // Save order (will cascade save order items because of CascadeType.ALL)
         Order savedOrder = orderRepository.save(order);
+
+        // Khấu trừ xu tích lũy nếu được áp dụng
+        if (request.getPointsUsed() != null && request.getPointsUsed() > 0) {
+            try {
+                loyaltyService.deductPoints(userId, request.getPointsUsed(), "Sử dụng xu thành viên cho đơn hàng #" + savedOrder.getOrderCode());
+            } catch (Exception e) {
+                System.err.println("Lỗi trừ điểm tích lũy: " + e.getMessage());
+            }
+        }
 
         // Clear cart
         cartService.clearCart(userId);

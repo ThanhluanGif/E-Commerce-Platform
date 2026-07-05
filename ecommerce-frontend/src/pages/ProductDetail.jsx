@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import productService from '../services/productService';
 import reviewService from '../services/reviewService';
+import api from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import ProductCard from '../components/ProductCard';
 import { formatPrice, getDiscountPercent, getProductImage } from '../utils/helpers';
@@ -53,6 +54,10 @@ function ProductDetail() {
         setQuantity(1);
         setSelectedVariant(null);
 
+        // Track product view action
+        api.post(`/api/activities/track?type=VIEW&productId=${id}`)
+            .catch(err => console.error("Error tracking view activity:", err));
+
         productService.getProductById(id)
             .then((res) => {
                 if (res && res.success && res.data) {
@@ -60,17 +65,14 @@ function ProductDetail() {
                     setProduct(p);
                     setActiveImage(p.imageUrl || "https://via.placeholder.com/400");
                     
-                    // Fetch related products in the same category
-                    if (p.categoryId) {
-                        productService.getProductsByCategoryId(p.categoryId)
-                            .then(relatedRes => {
-                                if (relatedRes && relatedRes.success && Array.isArray(relatedRes.data)) {
-                                    const filtered = relatedRes.data.filter(item => item.id !== p.id).slice(0, 6);
-                                    setRelatedProducts(filtered);
-                                }
-                            })
-                            .catch(err => console.error("Error loading related products:", err));
-                    }
+                    // Fetch similar products with category and price filters
+                    api.get(`/api/recommendations/similar/${p.id}`)
+                        .then(similarRes => {
+                            if (similarRes && similarRes.data && similarRes.data.success && Array.isArray(similarRes.data.data)) {
+                                setRelatedProducts(similarRes.data.data);
+                            }
+                        })
+                        .catch(err => console.error("Error loading similar products:", err));
                 } else {
                     setError("Không thể tải thông tin sản phẩm!");
                 }
@@ -109,6 +111,10 @@ function ProductDetail() {
             }
             addToCart(product, quantity, selectedVariant);
             toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+            
+            // Track Add to Cart activity
+            api.post(`/api/activities/track?type=ADD_TO_CART&productId=${product.id}`)
+                .catch(err => console.error(err));
         }
     };
 

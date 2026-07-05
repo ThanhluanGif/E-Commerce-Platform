@@ -7,7 +7,8 @@ import NotificationBell from './NotificationBell';
 import {
   IconSearch, IconCart, IconUser, IconHeart,
   IconMessage, IconStore, IconPackage, IconLogout,
-  IconDashboard, IconChevronDown, IconSettings, IconTrash
+  IconDashboard, IconChevronDown, IconSettings, IconTrash,
+  IconGift
 } from '../utils/icons';
 import './Navbar.css';
 
@@ -153,6 +154,9 @@ function Navbar() {
                                     </Link>
                                     <Link to="/messages" className="topbar-dropdown-item">
                                         <IconMessage size={16} /> Tin nhắn
+                                    </Link>
+                                    <Link to="/loyalty" className="topbar-dropdown-item">
+                                        <IconGift size={16} /> Khách hàng thân thiết
                                     </Link>
                                     {isAdmin && (
                                         <>

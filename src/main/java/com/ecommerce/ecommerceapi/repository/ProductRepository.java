@@ -50,4 +50,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Query("SELECT DISTINCT p.name FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))")
     List<String> getSearchSuggestions(@Param("q") String q, Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE p.category.id = :categoryId AND p.id != :productId AND p.active = true AND p.price BETWEEN :minPrice AND :maxPrice")
+    List<Product> findSimilarProducts(
+            @Param("categoryId") Integer categoryId,
+            @Param("productId") Integer productId,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            Pageable pageable
+    );
 }

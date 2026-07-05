@@ -24,6 +24,9 @@ function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [usePoints, setUsePoints] = useState(false);
+    const [userPointsVal, setUserPointsVal] = useState(0);
+    const [userTier, setUserTier] = useState('BRONZE');
 
     // Shipping options states
     const [shippingOptions, setShippingOptions] = useState([]);
@@ -59,8 +62,17 @@ function Checkout() {
             });
     }, [shippingAddress]);
 
-    // Fetch address book on mount
+    // Fetch address book and points on mount
     useEffect(() => {
+        api.get('/api/loyalty/points')
+            .then(res => {
+                if (res.data && res.data.success && res.data.data) {
+                    setUserPointsVal(res.data.data.points || 0);
+                    setUserTier(res.data.data.tier || 'BRONZE');
+                }
+            })
+            .catch(err => console.error("Error loading points for checkout:", err));
+
         addressService.getAllAddresses()
             .then(res => {
                 if (res && res.success && Array.isArray(res.data)) {
@@ -103,8 +115,22 @@ function Checkout() {
     };
 
     const subtotal = cartItems.reduce((sum, item) => sum + getPrice(item) * item.quantity, 0);
-    const finalShippingFee = subtotal > 500000 ? 0 : shippingFee;
-    const total = subtotal + finalShippingFee;
+
+    // Member tier discount
+    let tierDiscountPercent = 0;
+    if (userTier === 'GOLD') tierDiscountPercent = 0.05;
+    else if (userTier === 'PLATINUM') tierDiscountPercent = 0.10;
+    else if (userTier === 'DIAMOND') tierDiscountPercent = 0.15;
+    const tierDiscountAmount = subtotal * tierDiscountPercent;
+
+    // Points discount (1 xu = 1,000 VND)
+    const maxPointsDiscount = Math.min(subtotal - tierDiscountAmount, userPointsVal * 1000);
+    const pointsDiscountAmount = usePoints ? maxPointsDiscount : 0;
+    const totalDiscount = tierDiscountAmount + pointsDiscountAmount;
+
+    // Diamond tier gets Free Shipping
+    const finalShippingFee = (userTier === 'DIAMOND' || subtotal > 500000) ? 0 : shippingFee;
+    const total = Math.max(0, subtotal - totalDiscount + finalShippingFee);
 
     const handleSubmitOrder = async (e) => {
         e.preventDefault();
@@ -119,7 +145,9 @@ function Checkout() {
         try {
             const res = await orderService.createOrder({
                 shippingAddress,
-                paymentMethod
+                paymentMethod,
+                discountAmount: totalDiscount,
+                pointsUsed: usePoints ? Math.floor(pointsDiscountAmount / 1000) : 0
             });
 
             if (res && res.success && res.data) {
@@ -344,6 +372,36 @@ function Checkout() {
                         <span>Tạm tính:</span>
                         <span>{formatPrice(subtotal)}</span>
                     </div>
+
+                    {tierDiscountAmount > 0 && (
+                        <div className="summary-row" style={{ color: 'var(--color-primary)' }}>
+                            <span>Ưu đãi hạng {userTier}:</span>
+                            <span>-{formatPrice(tierDiscountAmount)}</span>
+                        </div>
+                    )}
+
+                    {/* Point usage option */}
+                    {userPointsVal > 0 && (
+                        <div style={{ backgroundColor: 'var(--color-gray-50)', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--border-radius-xs)', padding: '10px', margin: '10px 0' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontSize: '13px' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={usePoints} 
+                                    onChange={(e) => setUsePoints(e.target.checked)} 
+                                />
+                                <div>
+                                    Dùng <strong>{userPointsVal} xu</strong> (giảm -{formatPrice(maxPointsDiscount)})
+                                </div>
+                            </label>
+                        </div>
+                    )}
+
+                    {pointsDiscountAmount > 0 && (
+                        <div className="summary-row" style={{ color: 'var(--color-primary)' }}>
+                            <span>Điểm tích lũy:</span>
+                            <span>-{formatPrice(pointsDiscountAmount)}</span>
+                        </div>
+                    )}
 
                     <div className="summary-row">
                         <span>Phí giao hàng:</span>

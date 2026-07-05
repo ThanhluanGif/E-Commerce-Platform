@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
+import api from '../services/api';
 import ProductCard, { ProductCardSkeleton } from '../components/ProductCard';
 import { 
   IconFlash, IconTruck, IconTicket, IconGift, 
@@ -12,6 +13,7 @@ import './Home.css';
 function Home() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [trending, setTrending] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Countdown timer for Flash Sale (simulating 3 hours)
@@ -54,6 +56,15 @@ function Home() {
                 console.error(err);
                 setLoading(false);
             });
+
+        // Load trending products
+        api.get('/api/recommendations/trending?limit=6')
+            .then(res => {
+                if (res.data && res.data.success) {
+                    setTrending(res.data.data || []);
+                }
+            })
+            .catch(err => console.error("Error loading trending products:", err));
     }, []);
 
     // Get Lucide icon dynamically based on category name
@@ -166,6 +177,20 @@ function Home() {
                     ))}
                 </div>
             </div>
+
+            {/* 4B. TRENDING PRODUCTS */}
+            {trending.length > 0 && (
+                <div className="discover-block" style={{ marginTop: 'var(--space-6)' }}>
+                    <h3 className="block-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <IconGift size={20} color="var(--color-primary)" /> Xu Hướng Mua Sắm
+                    </h3>
+                    <div className="product-grid" style={{ marginTop: 'var(--space-4)' }}>
+                        {trending.map(prod => (
+                            <ProductCard key={prod.id} product={prod} />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* 5. RECOMMENDATION / DAILY DISCOVER GRID */}
             <div className="discover-block">

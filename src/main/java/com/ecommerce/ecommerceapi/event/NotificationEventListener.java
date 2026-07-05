@@ -6,6 +6,7 @@ import com.ecommerce.ecommerceapi.entity.OrderStatus;
 import com.ecommerce.ecommerceapi.entity.OrderStatusHistory;
 import com.ecommerce.ecommerceapi.repository.OrderStatusHistoryRepository;
 import com.ecommerce.ecommerceapi.service.EmailService;
+import com.ecommerce.ecommerceapi.service.LoyaltyService;
 import com.ecommerce.ecommerceapi.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -23,6 +24,9 @@ public class NotificationEventListener {
 
     @Autowired
     private OrderStatusHistoryRepository orderStatusHistoryRepository;
+
+    @Autowired
+    private LoyaltyService loyaltyService;
 
     @EventListener
     public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
@@ -49,6 +53,18 @@ public class NotificationEventListener {
                 emailService.sendOrderConfirmation(order);
             } catch (Exception e) {
                 System.err.println("Lỗi khi gửi email xác nhận đơn hàng: " + e.getMessage());
+            }
+        }
+
+        // Nếu đơn hàng hoàn thành (DELIVERED), cộng điểm tích lũy
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+            try {
+                int points = order.getTotalPrice().divide(java.math.BigDecimal.valueOf(10000)).intValue();
+                if (points > 0) {
+                    loyaltyService.addPoints(order.getUser().getId(), points, "Hoàn thành đơn hàng #" + order.getOrderCode());
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi cộng điểm tích lũy: " + e.getMessage());
             }
         }
 

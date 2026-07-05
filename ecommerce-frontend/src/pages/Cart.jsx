@@ -1,11 +1,13 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import Breadcrumb from '../components/Breadcrumb';
+import ProductCard from '../components/ProductCard';
+import api from '../services/api';
 import { formatPrice, getProductImage } from '../utils/helpers';
 import { useToast } from '../utils/toast';
-import { IconCart, IconPlus, IconMinus, IconTrash } from '../utils/icons';
+import { IconCart, IconPlus, IconMinus, IconTrash, IconGift } from '../utils/icons';
 import './Cart.css';
 
 function Cart() {
@@ -13,6 +15,41 @@ function Cart() {
     const { isAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
     const toast = useToast();
+    const [recommended, setRecommended] = useState([]);
+
+    useEffect(() => {
+        if (cartItems.length > 0) {
+            const firstItem = cartItems[0];
+            api.get(`/api/recommendations/frequently-bought/${firstItem.productId}?limit=4`)
+                .then(res => {
+                    if (res.data && res.data.success && res.data.data.length > 0) {
+                        setRecommended(res.data.data);
+                    } else {
+                        api.get('/api/recommendations/trending?limit=4')
+                            .then(tRes => {
+                                if (tRes.data && tRes.data.success) {
+                                    setRecommended(tRes.data.data || []);
+                                }
+                            });
+                    }
+                })
+                .catch(() => {
+                    api.get('/api/recommendations/trending?limit=4')
+                        .then(tRes => {
+                            if (tRes.data && tRes.data.success) {
+                                setRecommended(tRes.data.data || []);
+                            }
+                        });
+                });
+        } else {
+            api.get('/api/recommendations/trending?limit=4')
+                .then(res => {
+                    if (res.data && res.data.success) {
+                        setRecommended(res.data.data || []);
+                    }
+                });
+        }
+    }, [cartItems]);
 
     // Calculations
     const getPrice = (item) => {
@@ -177,6 +214,20 @@ function Cart() {
                     </button>
                 </aside>
             </div>
+
+            {/* 3. RECOMMENDATIONS SECTION */}
+            {recommended.length > 0 && (
+                <div style={{ marginTop: 'var(--space-10)', borderTop: '1px solid var(--color-gray-200)', paddingTop: 'var(--space-6)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-4)' }}>
+                        <IconGift size={18} color="var(--color-primary)" /> Có Thể Bạn Quan Tâm
+                    </h3>
+                    <div className="product-grid">
+                        {recommended.map(prod => (
+                            <ProductCard key={prod.id} product={prod} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
