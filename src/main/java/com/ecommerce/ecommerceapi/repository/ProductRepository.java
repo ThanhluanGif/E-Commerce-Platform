@@ -37,6 +37,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
             "(:maxPrice IS NULL OR p.price <= :maxPrice) AND " +
             "(:active IS NULL OR p.active = :active)")
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "shop"})
     Page<Product> filterProducts(
             @Param("name") String name,
             @Param("categoryId") Integer categoryId,

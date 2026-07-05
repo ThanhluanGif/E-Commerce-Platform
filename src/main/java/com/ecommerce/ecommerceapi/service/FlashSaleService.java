@@ -13,6 +13,8 @@ import com.ecommerce.ecommerceapi.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ public class FlashSaleService {
     @Autowired
     private ProductRepository productRepository;
 
+    @CacheEvict(value = "flashsales", key = "'active'")
     public FlashSale createFlashSale(FlashSaleDTO dto) {
         FlashSale fs = FlashSale.builder()
                 .name(dto.getName())
@@ -40,6 +43,7 @@ public class FlashSaleService {
         return flashSaleRepository.save(fs);
     }
 
+    @CacheEvict(value = "flashsales", key = "'active'")
     public FlashSaleItem addProductToFlashSale(Integer flashSaleId, FlashSaleItemDTO itemDto) {
         FlashSale fs = flashSaleRepository.findById(flashSaleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chương trình Flash Sale!"));
@@ -60,6 +64,7 @@ public class FlashSaleService {
         return flashSaleItemRepository.save(item);
     }
 
+    @Cacheable(value = "flashsales", key = "'active'")
     public List<FlashSaleDTO> getActiveFlashSales() {
         LocalDateTime now = LocalDateTime.now();
         List<FlashSale> activeSales = flashSaleRepository.findByActiveTrueAndStartTimeBeforeAndEndTimeAfter(now, now);

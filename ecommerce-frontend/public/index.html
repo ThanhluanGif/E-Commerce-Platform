@@ -4,10 +4,10 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#ee4d2d" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Hệ thống mua sắm trực tuyến E-Commerce với hàng ngàn sản phẩm đa dạng, giá cả ưu đãi, thanh toán nhanh chóng qua VNPay và giao hàng hỏa tốc."
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
@@ -24,20 +24,19 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>E-Commerce | Kênh Mua Sắm Trực Tuyến Đáng Tin Cậy</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('ServiceWorker registered successfully!', reg))
+            .catch(err => console.error('ServiceWorker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

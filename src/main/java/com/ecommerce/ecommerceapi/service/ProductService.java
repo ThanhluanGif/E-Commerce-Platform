@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -25,17 +27,20 @@ public class ProductService {
     }
 
     // Lấy sản phẩm theo ID
+    @Cacheable(value = "products", key = "#id")
     public Product getProductById(Integer id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new com.ecommerce.ecommerceapi.exception.ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
     }
 
     // Thêm mới hoặc Cập nhật sản phẩm
+    @CacheEvict(value = "products", key = "#product.id", condition = "#product.id != null")
     public Product saveProduct(Product product) {
         return productRepository.save(product);
     }
 
     // Xóa sản phẩm
+    @CacheEvict(value = "products", key = "#id")
     public void deleteProduct(Integer id) {
         Product product = getProductById(id);
         productRepository.delete(product);

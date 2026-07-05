@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './utils/toast';
 import { NotificationProvider } from './context/NotificationContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Home from './pages/Home';
 import ProductList from './pages/ProductList';
 import ProductDetail from './pages/ProductDetail';
@@ -32,7 +33,8 @@ function App() {
     return (
         <ToastProvider>
             <NotificationProvider>
-                <Router>
+                <ErrorBoundary>
+                    <Router>
                 <Routes>
                     <Route element={<MainLayout />}>
                         <Route path="/" element={<Home />} />
@@ -71,7 +73,8 @@ function App() {
                         <Route path="/register" element={<Register />} />
                     </Route>
                 </Routes>
-            </Router>
+                    </Router>
+                </ErrorBoundary>
             </NotificationProvider>
         </ToastProvider>
     );
