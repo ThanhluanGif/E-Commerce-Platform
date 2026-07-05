@@ -24,4 +24,10 @@ public class AuthController {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công!", response));
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<TokenRefreshResponse>> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+        TokenRefreshResponse response = authService.refreshToken(request);
+        return ResponseEntity.ok(ApiResponse.success("Refresh token thành công!", response));
+    }
 }

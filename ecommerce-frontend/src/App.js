@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './utils/toast';
+import { NotificationProvider } from './context/NotificationContext';
 import Home from './pages/Home';
 import ProductList from './pages/ProductList';
 import ProductDetail from './pages/ProductDetail';
@@ -21,6 +22,7 @@ import Addresses from './pages/Addresses';
 import Returns from './pages/Returns';
 import SellerDashboard from './pages/SellerDashboard';
 import FlashSale from './pages/FlashSale';
+import Notifications from './pages/Notifications';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
@@ -28,7 +30,8 @@ import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
 function App() {
     return (
         <ToastProvider>
-            <Router>
+            <NotificationProvider>
+                <Router>
                 <Routes>
                     <Route element={<MainLayout />}>
                         <Route path="/" element={<Home />} />
@@ -52,6 +55,7 @@ function App() {
                             <Route path="/addresses" element={<Addresses />} />
                             <Route path="/returns" element={<Returns />} />
                             <Route path="/seller" element={<SellerDashboard />} />
+                            <Route path="/notifications" element={<Notifications />} />
                         </Route>
 
                         {/* Admin Routes */}
@@ -66,6 +70,7 @@ function App() {
                     </Route>
                 </Routes>
             </Router>
+            </NotificationProvider>
         </ToastProvider>
     );
 }

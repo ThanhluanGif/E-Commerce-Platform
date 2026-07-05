@@ -19,6 +19,7 @@
 6. [Kế Hoạch Nâng Cấp Tính Năng (Phase 10B - 10D)](#6-kế-hoạch-nâng-cấp-tính-năng-phase-10b---10d)
 7. [Kế Hoạch Triển Khai DevOps & Production (Phase 11)](#7-kế-hoạch-triển-khai-devops--production-phase-11)
 8. [Cấu Trúc Thư Mục Chuẩn Hóa](#8-cấu-trúc-thư-mục-chuẩn-hóa)
+9. [Kế Hoạch Phát Triển Tiếp Theo (Phase 12 - 16)](#9-kế-hoạch-phát-triển-tiếp-theo-phase-12---16)
 
 ---
 
@@ -362,4 +363,229 @@ ecommerce-frontend/src/
 
 ---
 
-> **Lưu ý triển khai:** Kế hoạch Phase 10A sẽ được tiến hành ngay lập tức. Đây là nền tảng cốt lõi giúp hệ thống của bạn an toàn trước các cuộc tấn công chiếm quyền quản trị và lỗi lệch dữ liệu tồn kho nghiêm trọng. Sau khi hoàn thành Phase 10A, chúng tôi sẽ lần lượt triển khai các Phase tiếp theo theo đúng lộ trình đã đề ra.
+## 9. Kế Hoạch Phát Triển Tiếp Theo (Phase 12 - 16)
+
+Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các Phase từ 12 đến 16, phân chia rõ ràng các công việc cần làm ở Backend (BE) và Frontend (FE).
+
+---
+
+### 🔔 Phase 12: Notification System & Session Management (8 ngày)
+
+> **Mục tiêu:** Xây dựng hệ thống thông báo đa kênh (Realtime WebSocket, Database Notification, và Async Email) kết hợp cơ chế Refresh Token Rotation để bảo vệ phiên đăng nhập lâu dài của người dùng.
+
+#### 🔧 Backend (Spring Boot)
+1. **Xây dựng Mô hình Dữ liệu Thông báo:**
+   - Tạo thực thể `Notification` trong package `com.ecommerce.ecommerceapi.entity`:
+     - Các trường: `id` (Long, PK), `recipient` (User, `@ManyToOne`), `type` (NotificationType Enum), `title` (String), `message` (Text), `actionUrl` (String - deep link), `isRead` (boolean), `createdAt` (LocalDateTime).
+     - Định nghĩa `NotificationType` Enum: `ORDER_UPDATE`, `PROMOTION`, `CHAT`, `SYSTEM`, `REVIEW`.
+   - Tạo `NotificationRepository` kế thừa `JpaRepository` với các truy vấn phân trang:
+     - `Page<Notification> findByRecipientIdOrderByCreatedAtDesc(Long userId, Pageable pageable)`
+     - `long countByRecipientIdAndIsReadFalse(Long userId)`
+2. **Thiết lập WebSocket Notification Broker:**
+   - Mở rộng cấu hình `WebSocketConfig.java` để bổ sung endpoint cho notifications:
+     - `/topic/notifications/{userId}`
+   - Khi tạo thông báo mới trong Database, sử dụng `SimpMessagingTemplate` để gửi đồng thời thông báo realtime qua WebSocket đến client tương ứng.
+3. **Áp dụng Design Pattern - Spring Events (`@EventListener`):**
+   - Viết class event cụ thể: `OrderStatusChangedEvent`, `NewReviewEvent`, `VoucherExpiredEvent`.
+   - Trong `OrderService` hoặc `ReviewService`, phát hành sự kiện bằng `ApplicationEventPublisher`.
+   - Viết `NotificationEventListener` để nghe các sự kiện này, tự động lưu thông báo vào Database và phát qua WebSocket. Điều này giúp giảm sự phụ thuộc lẫn nhau (loose coupling) giữa các service.
+4. **Tích hợp Email Service bất đồng bộ (Async Email):**
+   - Thêm dependency `spring-boot-starter-mail` và template engine `thymeleaf` trong `pom.xml`.
+   - Tạo `EmailService` và triển khai với `JavaMailSender`:
+     - Sử dụng `@Async` để tránh nghẽn thread xử lý chính khi gửi email.
+     - Thiết lập các email template HTML phong phú cho:
+       - Đăng ký tài khoản thành công (Welcome Email).
+       - Xác nhận đơn hàng thành công (Order Invoice).
+       - Khôi phục mật khẩu (Password Reset Link).
+5. **Cơ chế Token Rotation & Session Management:**
+   - Tạo thực thể `RefreshToken` liên kết `1-1` với `User`, chứa `token` (chuỗi UUID ngẫu nhiên), `expiryDate` (7 ngày), `deviceInfo` (User-Agent), `ipAddress`.
+   - Khi đăng nhập thành công, sinh Access Token (JWT - hạn 15 phút) và Refresh Token (UUID - lưu DB).
+   - Viết API `/api/auth/refresh-token`:
+     - Nhận `refreshToken` từ request.
+     - Kiểm tra tính hợp lệ và thời gian hết hạn trong DB.
+     - Áp dụng **Token Rotation**: Tạo mới một cặp Access Token + Refresh Token mới, thu hồi (xóa/vô hiệu hóa) token cũ nhằm chống lại cuộc tấn công Replay Attack.
+     - Trả về cặp token mới cho client.
+   - Viết API `/api/auth/logout` và `/api/auth/logout-all` để thu hồi token.
+
+#### 🎨 Frontend (React)
+1. **Xây dựng Notification Context & Service:**
+   - Tạo file `services/notificationService.js` chứa các hàm gọi API: `getNotifications()`, `getUnreadCount()`, `markAsRead()`, `markAllAsRead()`.
+   - Tạo `NotificationContext.jsx` để quản lý state toàn cục: `notifications` list, `unreadCount`, kết nối WebSocket lắng nghe thông báo mới khi ứng dụng khởi chạy.
+2. **Thiết kế giao diện Notification UI Components:**
+   - **`NotificationBell.jsx`**: Nằm trên Header/Navbar, hiển thị icon quả chuông có badge màu đỏ (số thông báo chưa đọc). Khi click sẽ hiển thị dropdown chứa 5 thông báo mới nhất, có nút "Xem tất cả".
+   - **Trang `Notifications.jsx`**: Trang quản lý tất cả thông báo với chức năng cuộn vô hạn (infinite scroll) hoặc phân trang, cho phép lọc thông báo theo loại (Đơn hàng, Khuyến mãi, Hệ thống).
+3. **Tích hợp Axios Interceptor tự động Refresh Token:**
+   - Nâng cấp `services/api.js` sử dụng interceptor `response`:
+     - Khi nhận mã lỗi `401 Unauthorized` từ API → chặn request lại.
+     - Tự động gọi API `/api/auth/refresh-token` gửi kèm `refreshToken` từ LocalStorage.
+     - Nếu refresh thành công: Cập nhật lại token mới vào LocalStorage, cập nhật header `Authorization` của request bị lỗi và gửi lại request đó.
+     - Nếu refresh thất bại (Refresh token hết hạn): Gọi hàm logout, xóa dữ liệu và chuyển hướng người dùng về trang đăng nhập `/login`.
+4. **Xây dựng luồng Quên mật khẩu:**
+   - Tạo trang `ForgotPassword.jsx` (Form nhập email để nhận mã khôi phục).
+   - Tạo trang `ResetPassword.jsx` (Form nhập mật khẩu mới, lấy token từ URL query).
+
+---
+
+### 💳 Phase 13: Payment Gateways, Shipping & Invoicing (12 ngày)
+
+> **Mục tiêu:** Tích hợp các cổng thanh toán phổ biến tại Việt Nam (VNPay, MoMo) với cơ chế bảo mật checksum/IPN, kết hợp tính toán phí vận chuyển tự động và sinh hóa đơn PDF chuyên nghiệp.
+
+#### 🔧 Backend (Spring Boot)
+1. **Thiết kế Kiến trúc Thanh toán (Payment Strategy Pattern):**
+   - Tạo interface `PaymentGateway` định nghĩa các phương thức: `createPaymentUrl()`, `verifyCallback()`, `processRefund()`.
+   - Implement cho các cổng thanh toán: `VNPayGateway`, `MoMoGateway` và `CODPayment`.
+2. **Tạo Mô hình Giao dịch:**
+   - Tạo thực thể `PaymentTransaction` lưu lịch sử giao dịch: `id`, `order` (Liên kết `@ManyToOne`), `transactionCode` (Mã giao dịch từ cổng thanh toán), `amount`, `paymentMethod`, `status` (PENDING, SUCCESS, FAILED, REFUNDED), `rawResponse` (Log JSON nhận được để phục vụ audit/debug).
+3. **Tích hợp VNPay & MoMo Sandbox:**
+   - Cấu hình các tham số môi trường trong `application.properties` (Secure Hash Secret, Merchant Code, Endpoint URLs).
+   - **API tạo URL thanh toán:** Khi người dùng chọn thanh toán online, BE tính toán mã hóa checksum HmacSHA512 và tạo liên kết chuyển hướng đến cổng thanh toán tương ứng.
+   - **Xử lý API Callback (IPN Endpoint):**
+     - Endpoint nhận dữ liệu ngầm từ cổng thanh toán gửi qua (IPN/Webhook).
+     - Xác thực chữ ký số (Checksum) để đảm bảo dữ liệu không bị sửa đổi trên đường truyền.
+     - Cập nhật trạng thái đơn hàng (`OrderStatus.CONFIRMED` / `OrderStatus.CANCELLED`) và trạng thái giao dịch (`PaymentStatus.SUCCESS` / `PaymentStatus.FAILED`) trong một Transaction quản lý dữ liệu chặt chẽ.
+4. **Xây dựng Module Vận chuyển (Logistics Strategy):**
+   - Tạo thực thể `ShippingOrder` lưu thông tin vận chuyển: `id`, `order` (`@OneToOne`), `trackingCode` (Mã vận đơn), `carrierName` (Đơn vị vận chuyển như GHN, GHTK, ViettelPost), `shippingFee`, `status` (CREATED, PICKED_UP, IN_TRANSIT, DELIVERED, RETURNED), `estimatedDeliveryDate`.
+   - Tạo thực thể `OrderStatusHistory` để ghi nhận các mốc lịch sử giao nhận đơn hàng (vẽ Timeline sau này).
+   - Tạo class giả lập API của đơn vị vận chuyển hoặc tích hợp SDK của bên thứ ba để tính phí ship theo Tỉnh/Thành phố dựa trên cân nặng/kích thước gói hàng.
+5. **Xuất hóa đơn PDF tự động:**
+   - Tích hợp thư viện `OpenPDF` hoặc `iText` trong backend.
+   - Viết `InvoiceService` tự động sinh hóa đơn mua hàng PDF chuyên nghiệp khi trạng thái giao dịch chuyển sang thành công.
+   - Hóa đơn bao gồm thông tin chi tiết: Logo cửa hàng, Tên người mua/bán, chi tiết các mặt hàng, thuế VAT, tiền giảm giá của voucher, mã QR kiểm tra thông tin.
+   - Viết API `/api/orders/{orderId}/invoice` cho phép người dùng download hóa đơn.
+
+#### 🎨 Frontend (React)
+1. **Thiết kế UI Chọn Phương thức Thanh toán:**
+   - Nâng cấp trang `/checkout` hiển thị danh sách các phương thức thanh toán trực quan (kèm logo VNPay, MoMo, COD).
+   - Khi người dùng bấm đặt hàng bằng VNPay/MoMo, hiển thị màn hình loading chờ chuyển hướng sang cổng thanh toán.
+2. **Xây dựng Trang Kết quả Giao dịch (`PaymentResult.jsx`):**
+   - Lắng nghe các query parameters trả về từ cổng thanh toán (ví dụ: `vnp_ResponseCode`, `vnp_TxnRef`).
+   - Gọi API của Backend để đối chiếu trạng thái giao dịch.
+   - Hiển thị kết quả trực quan đẹp mắt (Thành công/Thất bại), chi tiết đơn hàng đã mua và mã vận đơn nếu có.
+3. **Tích hợp Shipping Fee & Carrier UI:**
+   - Trong trang checkout, sau khi người dùng điền hoặc chọn Địa chỉ giao hàng → Tự động gọi API tính toán phí vận chuyển từ Backend.
+   - Hiển thị các gói vận chuyển kèm giá tiền tương ứng (Hỏa tốc, Tiêu chuẩn, Tiết kiệm) để người dùng chủ động lựa chọn.
+4. **Hiển thị Stepper Tiến trình Đơn hàng:**
+   - Thiết kế component `OrderTimeline.jsx` dạng thanh tiến trình (Stepper) dọc hoặc ngang hiển thị các mốc thời gian giao hàng từ Database (`OrderStatusHistory`), giúp người dùng dễ dàng theo dõi hành trình đơn hàng.
+
+---
+
+### 🚀 Phase 14: Redis Caching, UX & Mobile (13 ngày)
+
+> **Mục tiêu:** Tăng tốc độ phản hồi hệ thống (giảm tải DB bằng Redis), cải tiến trải nghiệm người dùng frontend (Skeleton, Error Boundary, a11y) và tối ưu hóa hiển thị trên di động dưới dạng PWA.
+
+#### 🔧 Backend (Spring Boot)
+1. **Tích hợp Redis làm Cache Layer:**
+   - Thêm dependency `spring-boot-starter-data-redis` trong file `pom.xml`.
+   - Cấu hình Redis Connection Pool trong `application.properties` (hoặc thông qua Docker compose).
+   - Sử dụng `@EnableCaching` để bật tính năng caching.
+2. **Thiết lập Chiến lược Caching (Cache-aside & Write-through):**
+   - **Danh mục sản phẩm:** Cache key `categories::tree`, TTL 2 giờ. Thu hồi (`@CacheEvict`) khi Admin tạo/sửa/xóa danh mục.
+   - **Chi tiết sản phẩm:** Cache key `product::[id]`, TTL 30 phút. Thu hồi khi có cập nhật sản phẩm.
+   - **Flash Sale Active:** Cache key `flashsales::active`, TTL 5 phút.
+   - Cấu hình Redis Cache Manager sử dụng `GenericJackson2JsonRedisSerializer` để lưu dữ liệu dưới dạng JSON giúp dễ dàng đọc/ghi hơn định dạng Binary mặc định.
+3. **Tối ưu hóa Database Query & Phân trang:**
+   - Rà soát các câu lệnh JPA, áp dụng `@EntityGraph` hoặc `JOIN FETCH` để loại bỏ triệt để lỗi N+1 Query nguy hiểm khi tải thông tin Product kèm theo Variants hoặc Images.
+   - Thêm Database Index trên các cột tìm kiếm thường xuyên như `slug`, `category_id`, `shop_id`, `created_at`.
+4. **Triển khai API Rate Limiting:**
+   - Tích hợp thư viện `Bucket4j` hoặc triển khai bằng Redis để giới hạn tần suất gửi request từ client.
+   - Giới hạn: API đăng nhập/đăng ký (10 req/phút/IP), API xem sản phẩm (100 req/phút/IP) để chống lại các cuộc tấn công Brute Force và DDoS.
+
+#### 🎨 Frontend (React)
+1. **Nâng cấp UX với Skeleton Loading & Lazy Loading:**
+   - Thiết kế component `Skeleton.jsx` động hỗ trợ nhiều hình dáng (circle, rectangle) có hiệu ứng chuyển màu shimmer mượt mà.
+   - Thay thế toàn bộ spinner tải trang thô sơ bằng Skeleton Loading tương ứng với bố cục trang (Product Card Skeleton, Details Skeleton).
+   - Sử dụng React Lazy (`React.lazy()` và `Suspense`) để chia nhỏ mã nguồn (code-splitting) cho các route lớn như AdminDashboard, SellerDashboard giúp giảm dung lượng bundle ban đầu khi người dùng tải trang.
+   - Thực hiện lazy load hình ảnh bằng cách áp dụng thuộc tính `loading="lazy"` hoặc Intersection Observer API.
+2. **Xây dựng Error Boundary & Empty States:**
+   - Tạo component `ErrorBoundary.jsx` để bao bọc các thành phần giao diện chính. Nếu một component con gặp lỗi runtime, Error Boundary sẽ chặn lại và hiển thị giao diện thông báo lỗi thân thiện thay vì làm trắng toàn bộ màn hình.
+   - Thiết kế các màn hình Empty State (Giỏ hàng trống, Không tìm thấy sản phẩm, Không có đơn hàng) sinh động kèm hình vẽ minh họa và các nút kêu gọi hành động (Call-to-Action).
+3. **Tối ưu hóa khả năng truy cập (a11y) & Hỗ trợ Di động:**
+   - Đảm bảo toàn bộ ứng dụng có thể điều hướng dễ dàng bằng bàn phím (phím Tab, Enter, Escape).
+   - Bổ sung đầy đủ các thẻ `aria-label`, `role` cho các phần tử tương tác phức tạp (Modal, Dropdown).
+   - Xây dựng Layout Responsive hoàn chỉnh: Sidebar của Admin/Seller tự động rút gọn thành Hamburger menu hoặc Bottom Navigation trên màn hình điện thoại (<768px).
+4. **Thiết lập Progressive Web App (PWA):**
+   - Tạo file cấu hình `manifest.json` định nghĩa màu chủ đạo, icon và chế độ hiển thị standalone giống ứng dụng gốc.
+   - Viết Service Worker để lưu trữ cache cho các tài nguyên tĩnh (HTML, CSS, JS, các font chữ Google Fonts) giúp ứng dụng vẫn hiển thị giao diện cơ bản ngay cả khi người dùng bị mất kết nối internet (Offline mode).
+
+---
+
+### 🧠 Phase 15: Recommendation Engine, Analytics & Loyalty System (12 ngày)
+
+> **Mục tiêu:** Áp dụng thuật toán gợi ý sản phẩm thông minh dựa trên hành vi người dùng, cung cấp các biểu đồ báo cáo trực quan cho Admin/Seller, và giữ chân khách hàng bằng hệ thống Điểm thưởng & Hạng thành viên.
+
+#### 🔧 Backend (Spring Boot)
+1. **Theo dõi và Phân tích Hành vi Người dùng:**
+   - Tạo thực thể `UserActivity` lưu lại các hành động của khách hàng: `id`, `user` (nếu đã đăng nhập), `product` (nếu liên quan đến sản phẩm), `activityType` (VIEW, ADD_TO_CART, PURCHASE, WISHLIST, SEARCH), `duration` (nếu là xem sản phẩm), `timestamp`.
+   - Viết API tracking bất đồng bộ để frontend gửi dữ liệu hành vi lên mà không làm chậm trải nghiệm của khách hàng.
+2. **Phát triển Công cụ Gợi ý Sản phẩm (Recommendation Engine):**
+   - Viết `RecommendationService` cung cấp các thuật toán gợi ý:
+     - **Content-Based:** Tìm sản phẩm có cùng danh mục, nhãn hàng, cùng khoảng giá với sản phẩm đang xem.
+     - **Collaborative Filtering đơn giản:** Phân tích các đơn hàng cũ để gợi ý sản phẩm liên quan ("Những người mua sản phẩm này cũng mua sản phẩm kia").
+     - **Trending Products:** Các sản phẩm có lượt xem hoặc lượt mua tăng đột biến trong 7 ngày qua.
+     - **Recently Viewed:** Lấy danh sách sản phẩm người dùng vừa click xem gần đây.
+3. **Xây dựng Hệ thống Báo cáo & Thống kê:**
+   - Viết các câu lệnh native query/aggregation trong `OrderRepository` để tổng hợp số liệu: Doanh thu theo khoảng thời gian, Tỷ lệ đơn hàng thành công/bị hủy, Phễu chuyển đổi khách hàng (xem -> thêm giỏ hàng -> thanh toán thành công).
+   - Phân tích địa lý đơn hàng dựa trên Địa chỉ giao nhận để vẽ bản đồ phân bố khách hàng.
+   - API phân tích chuyên sâu cho Shop/Seller: Tỷ lệ quay lại mua hàng, sản phẩm có nhiều đánh giá tiêu cực nhất.
+4. **Hệ thống Khách hàng Thân thiết (Loyalty & Points System):**
+   - Tạo thực thể `UserPoints` lưu điểm tích lũy hiện tại và hạng thành viên (`MembershipTier` Enum: BRONZE, SILVER, GOLD, PLATINUM, DIAMOND).
+   - Tạo thực thể `PointTransaction` lưu lịch sử cộng/trừ điểm kèm lý do (ví dụ: mua hàng được cộng điểm, dùng điểm để giảm giá đơn hàng).
+   - Viết logic tự động cộng điểm khi đơn hàng chuyển sang trạng thái `DELIVERED` (ví dụ: mỗi 10,000 VND nhận 1 điểm). Tự động trừ điểm khi có giao dịch trả hàng hoàn tiền.
+   - Xây dựng quy tắc tự động nâng/hạ hạng thành viên dựa trên tổng điểm tích lũy được trong vòng 1 năm. Mỗi hạng thành viên sẽ nhận được tỷ lệ chiết khấu hoặc ưu đãi miễn phí vận chuyển khác nhau.
+
+#### 🎨 Frontend (React)
+1. **Tích hợp các Section Gợi ý Thông minh:**
+   - Thêm băng chuyền sản phẩm (Carousel) "Sản phẩm tương tự" ở chân trang chi tiết sản phẩm.
+   - Thêm mục gợi ý "Có thể bạn quan tâm" ở trang Giỏ hàng và trang chủ dựa trên lịch sử mua sắm của người dùng.
+   - Thiết kế phần hiển thị danh sách "Sản phẩm đã xem gần đây" tiện lợi.
+2. **Nâng cấp Dashboard Báo cáo Đồ thị:**
+   - Tích hợp thư viện biểu đồ nhẹ và mạnh mẽ như `recharts` hoặc `chart.js`.
+   - **Đối với Admin Dashboard:** Thiết kế biểu đồ đường (Line chart) doanh thu theo ngày/tháng, biểu đồ tròn (Pie chart) tỷ lệ thanh toán (VNPAY vs MOMO vs COD), biểu đồ phễu chuyển đổi.
+   - **Đối với Seller Dashboard:** Biểu đồ cột thể hiện sản phẩm bán chạy nhất, danh sách đơn hàng cần xử lý gấp.
+   - Tích hợp tính năng xuất tệp tin báo cáo Excel/CSV trực tiếp trên giao diện.
+3. **Xây dựng Trang Quản lý Hạng Thành viên (Loyalty UI):**
+   - Thiết kế giao diện thẻ thành viên ảo độc đáo thay đổi màu sắc và hiệu ứng dựa trên hạng thành viên của người dùng (Bronze, Silver, Gold...).
+   - Hiển thị thanh tiến trình (Progress bar) cho biết người dùng cần tích lũy thêm bao nhiêu điểm nữa để đạt thứ hạng kế tiếp.
+   - Tích hợp tính năng đổi điểm lấy mã giảm giá hoặc trừ tiền trực tiếp ở bước checkout đơn hàng.
+
+---
+
+### 🛡️ Phase 16: Testing, Quality Assurance & Security Hardening (11 ngày)
+
+> **Mục tiêu:** Viết các bài kiểm thử tự động, chuẩn bị tài liệu API đầy đủ, thiết lập hệ thống giám sát lỗi sản xuất, và vá các lỗ hổng bảo mật chuyên sâu.
+
+#### 🔧 Backend (Spring Boot)
+1. **Viết Bộ kiểm thử Tự động (Unit & Integration Tests):**
+   - Đạt tối thiểu **80% Code Coverage** cho các dịch vụ cốt lõi.
+   - Sử dụng JUnit 5 kết hợp Mockito để viết Unit Test cho `AuthService`, `OrderService`, `PaymentService`.
+   - Sử dụng thư viện `@SpringBootTest` kết hợp cơ sở dữ liệu ảo H2 (In-memory database) để chạy Test tích hợp (Integration Test) kiểm tra toàn bộ luồng mua hàng thực tế mà không ảnh hưởng dữ liệu thật.
+2. **Tự động hóa Tài liệu API với Swagger/OpenAPI:**
+   - Tích hợp thư viện `springdoc-openapi-starter-webmvc-ui` vào cấu hình dự án.
+   - Bổ sung đầy đủ các chú thích `@Operation`, `@ApiResponse`, `@Schema` trên các controller và DTO để ghi nhận rõ ràng kiểu dữ liệu, các tham số đầu vào/ra.
+   - Xuất tệp tin cấu hình OpenAPI định dạng JSON để cung cấp tài liệu chính xác cho Frontend.
+3. **Thiết lập Logging cấu trúc & Công cụ Giám sát (Monitoring):**
+   - Định cấu hình Logback (`logback-spring.xml`) để ghi log dưới dạng cấu trúc JSON, giúp dễ dàng tích hợp và tìm kiếm log trên các hệ thống quản lý log tập trung sau này.
+   - Tích hợp Spring Boot Actuator (`spring-boot-starter-actuator`) và cấu hình xuất chỉ số đo lường định dạng Prometheus thông qua endpoint `/actuator/prometheus`.
+   - Tạo các chỉ số kiểm tra tình trạng sức khỏe kết nối (Health Check Indicators) của MySQL database và Redis.
+4. **Vá Lỗ hổng Bảo mật & Chống Tấn công:**
+   - Áp dụng các annotations validate dữ liệu đầu vào (`@NotBlank`, `@Size`, `@Pattern`) trên toàn bộ các DTO nhận dữ liệu từ client gửi lên.
+   - Tích hợp thư viện **JSoup HTML Sanitizer** để làm sạch dữ liệu đầu vào của các trường văn bản tự do (như mô tả sản phẩm của người bán, bình luận đánh giá của người mua) nhằm ngăn chặn tuyệt đối lỗi tấn công tiêm mã độc Cross-Site Scripting (XSS).
+   - Thiết lập cấu hình CORS chặt chẽ: Chỉ cho phép các tên miền Frontend chính thức được quyền truy xuất tài nguyên hệ thống ở môi trường Production.
+   - Thêm các cấu hình tiêu chuẩn an toàn cho tiêu đề HTTP (Security Headers) như Content-Security-Policy (CSP), X-Frame-Options (chống Clickjacking) và X-Content-Type-Options.
+
+#### 🎨 Frontend (React)
+1. **Viết Kiểm thử Giao diện (Frontend Testing):**
+   - Sử dụng thư viện `@testing-library/react` kết hợp với `Jest` để viết unit test cho các component dùng chung quan trọng: `Button.jsx`, `Modal.jsx`, `Input.jsx`.
+   - Viết các test case kiểm tra tính chính xác của các Context chứa logic nghiệp vụ như `CartContext.jsx` (đảm bảo việc cộng, trừ số lượng sản phẩm, tính toán giá tiền chuẩn xác).
+   - Cài đặt công cụ kiểm thử tự động toàn diện (E2E Testing) sử dụng `Cypress` hoặc `Playwright` để mô phỏng hành vi của người dùng thực hiện đăng nhập và mua hàng trên trình duyệt.
+2. **Khắc phục Lỗ hổng rò rỉ Dữ liệu nhạy cảm:**
+   - Rà soát toàn bộ mã nguồn Frontend, loại bỏ việc ghi log nhạy cảm (như in mật khẩu, thông tin JWT token ra Console log).
+   - Cấu hình thẻ `<meta>` Content Security Policy (CSP) trong tệp tin `index.html` của Frontend để ngăn chặn việc tải mã độc từ các nguồn bên ngoài không đáng tin cậy.
+3. **Cài đặt Tự động Đăng xuất do Không hoạt động (Session Idle Timeout):**
+   - Thiết lập một sự kiện lắng nghe các hoạt động tương tác của người dùng trên trang web (di chuột, nhấn phím).
+   - Nếu trong vòng 30 phút người dùng không có bất kỳ hành động nào tương tác với trang web, ứng dụng sẽ tự động xóa token và chuyển hướng về màn hình đăng nhập để đảm bảo an toàn tài khoản phòng trường hợp người dùng quên khóa máy.
+
+---
+
+> **Lưu ý triển khai:** Kế hoạch Phase 10A đã hoàn thành xuất sắc. Các Phase từ 12 đến 16 sẽ được lần lượt triển khai theo đúng lộ trình đã đề ra để đưa hệ thống lên chuẩn vận hành doanh nghiệp thực tế.
+

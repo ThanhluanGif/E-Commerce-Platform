@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import NotificationBell from './NotificationBell';
 import {
-  IconSearch, IconCart, IconUser, IconBell, IconHeart,
+  IconSearch, IconCart, IconUser, IconHeart,
   IconMessage, IconStore, IconPackage, IconLogout,
   IconDashboard, IconChevronDown, IconSettings, IconTrash
 } from '../utils/icons';
@@ -127,10 +128,7 @@ function Navbar() {
                     </div>
 
                     <div className="topbar-right">
-                        <Link to="/messages" className="topbar-link topbar-badge hide-mobile">
-                            <IconBell size={14} />
-                            <span>Thông Báo</span>
-                        </Link>
+                        <NotificationBell />
                         <span className="topbar-divider hide-mobile" />
                         <span className="topbar-link hide-mobile">Trợ Giúp</span>
                         <span className="topbar-divider" />

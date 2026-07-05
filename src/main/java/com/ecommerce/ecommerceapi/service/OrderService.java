@@ -2,6 +2,7 @@ package com.ecommerce.ecommerceapi.service;
 
 import com.ecommerce.ecommerceapi.dto.OrderRequest;
 import com.ecommerce.ecommerceapi.entity.*;
+import com.ecommerce.ecommerceapi.event.OrderStatusChangedEvent;
 import com.ecommerce.ecommerceapi.exception.BadRequestException;
 import com.ecommerce.ecommerceapi.exception.ResourceNotFoundException;
 import com.ecommerce.ecommerceapi.repository.OrderItemRepository;
@@ -10,6 +11,7 @@ import com.ecommerce.ecommerceapi.repository.ProductRepository;
 import com.ecommerce.ecommerceapi.repository.ProductVariantRepository;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,9 @@ public class OrderService {
 
     @Autowired
     private CartService cartService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public Order createOrder(Integer userId, OrderRequest request) {
         User user = userRepository.findById(userId)
@@ -133,6 +138,8 @@ public class OrderService {
         // Clear cart
         cartService.clearCart(userId);
 
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+
         return savedOrder;
     }
 
@@ -173,7 +180,9 @@ public class OrderService {
         }
 
         order.setStatus(status);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
     }
 
     public Order cancelOrder(Integer orderId, Integer userId) {
@@ -190,7 +199,9 @@ public class OrderService {
 
         returnStockForOrder(order);
         order.setStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
     }
 
     public Order payOrder(Integer orderId) {
@@ -200,7 +211,9 @@ public class OrderService {
             throw new BadRequestException("Đơn hàng này không ở trạng thái chờ thanh toán!");
         }
         order.setStatus(OrderStatus.SHIPPING);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
     }
 
     private void returnStockForOrder(Order order) {

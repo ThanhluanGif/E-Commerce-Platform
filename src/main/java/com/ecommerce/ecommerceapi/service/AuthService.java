@@ -4,12 +4,16 @@ import com.ecommerce.ecommerceapi.dto.LoginRequest;
 import com.ecommerce.ecommerceapi.dto.LoginResponse;
 import com.ecommerce.ecommerceapi.dto.RegisterRequest;
 import com.ecommerce.ecommerceapi.dto.UserDTO;
+import com.ecommerce.ecommerceapi.dto.TokenRefreshRequest;
+import com.ecommerce.ecommerceapi.dto.TokenRefreshResponse;
+import com.ecommerce.ecommerceapi.entity.RefreshToken;
 import com.ecommerce.ecommerceapi.entity.User;
 import com.ecommerce.ecommerceapi.entity.UserRole;
 import com.ecommerce.ecommerceapi.exception.BadRequestException;
 import com.ecommerce.ecommerceapi.exception.DuplicateResourceException;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
 import com.ecommerce.ecommerceapi.security.JwtProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,18 @@ public class AuthService {
 
     @Autowired
     private JwtProvider jwtProvider;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private HttpServletRequest httpServletRequest;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     public UserDTO register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -44,6 +60,20 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        try {
+            emailService.sendWelcomeEmail(savedUser);
+            notificationService.createNotification(
+                    savedUser.getId(),
+                    "Chào mừng bạn đến với E-Shop!",
+                    "Chào mừng bạn gia nhập E-Shop. Hãy bắt đầu mua sắm ngay hôm nay!",
+                    null,
+                    "/"
+            );
+        } catch (Exception e) {
+            System.err.println("Lỗi khi gửi email chào mừng: " + e.getMessage());
+        }
+
         return convertToDTO(savedUser);
     }
 
@@ -56,7 +86,11 @@ public class AuthService {
         }
 
         String token = jwtProvider.generateToken(user.getUsername());
-        return new LoginResponse(token, convertToDTO(user));
+        String deviceInfo = httpServletRequest.getHeader("User-Agent");
+        String ipAddress = httpServletRequest.getRemoteAddr();
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId(), deviceInfo, ipAddress);
+
+        return new LoginResponse(token, refreshToken.getToken(), convertToDTO(user));
     }
 
     public UserDTO convertToDTO(User user) {
@@ -69,5 +103,24 @@ public class AuthService {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .build();
+    }
+
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String accessToken = jwtProvider.generateToken(user.getUsername());
+                    
+                    // Token Rotation
+                    String deviceInfo = httpServletRequest.getHeader("User-Agent");
+                    String ipAddress = httpServletRequest.getRemoteAddr();
+                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId(), deviceInfo, ipAddress);
+                    
+                    return new TokenRefreshResponse(accessToken, newRefreshToken.getToken());
+                })
+                .orElseThrow(() -> new BadRequestException("Refresh token không hợp lệ hoặc đã hết hạn!"));
     }
 }

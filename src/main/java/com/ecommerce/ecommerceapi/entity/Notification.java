@@ -1,5 +1,6 @@
 package com.ecommerce.ecommerceapi.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false, length = 150)
@@ -30,6 +32,11 @@ public class Notification {
 
     @Column(name = "action_url", length = 500)
     private String actionUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", length = 50)
+    @Builder.Default
+    private NotificationType type = NotificationType.SYSTEM;
 
     @Column(name = "is_read", nullable = false)
     @Builder.Default

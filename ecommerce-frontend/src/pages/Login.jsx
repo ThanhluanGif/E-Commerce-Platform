@@ -21,7 +21,7 @@ function Login() {
             const res = await authService.login(username, password);
             const loginRes = res.success ? res.data : res;
             if (loginRes && loginRes.token) {
-                login(loginRes.token, loginRes.user);
+                login(loginRes.token, loginRes.refreshToken, loginRes.user);
                 setMessage('✅ Đăng nhập thành công!');
                 setTimeout(() => {
                     navigate('/');
