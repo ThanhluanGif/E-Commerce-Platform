@@ -23,6 +23,7 @@ import Returns from './pages/Returns';
 import SellerDashboard from './pages/SellerDashboard';
 import FlashSale from './pages/FlashSale';
 import Notifications from './pages/Notifications';
+import PaymentResult from './pages/PaymentResult';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
@@ -50,6 +51,7 @@ function App() {
                             <Route path="/orders/:id" element={<OrderDetail />} />
                             <Route path="/profile" element={<Profile />} />
                             <Route path="/payment-simulation" element={<PaymentSimulation />} />
+                            <Route path="/payment-result" element={<PaymentResult />} />
                             <Route path="/wishlist" element={<Wishlist />} />
                             <Route path="/messages" element={<Messages />} />
                             <Route path="/addresses" element={<Addresses />} />

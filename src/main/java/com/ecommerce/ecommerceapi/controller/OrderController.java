@@ -7,7 +7,10 @@ import com.ecommerce.ecommerceapi.dto.OrderRequest;
 import com.ecommerce.ecommerceapi.entity.Order;
 import com.ecommerce.ecommerceapi.entity.OrderStatus;
 import com.ecommerce.ecommerceapi.entity.ProductVariant;
+import com.ecommerce.ecommerceapi.entity.OrderStatusHistory;
+import com.ecommerce.ecommerceapi.repository.OrderStatusHistoryRepository;
 import com.ecommerce.ecommerceapi.repository.UserRepository;
+import com.ecommerce.ecommerceapi.service.InvoiceService;
 import com.ecommerce.ecommerceapi.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,12 @@ public class OrderController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private InvoiceService invoiceService;
+
+    @Autowired
+    private OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     private Integer getUserId(Principal principal) {
         if (principal == null) {
@@ -111,6 +120,32 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderDTO>> payOrder(@PathVariable Integer id) {
         Order paidOrder = orderService.payOrder(id);
         return ResponseEntity.ok(ApiResponse.success("Thanh toán đơn hàng thành công!", convertToDTO(paidOrder)));
+    }
+
+    // 8. GET: Tải hóa đơn PDF
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Integer id, Principal principal) throws Exception {
+        Integer userId = getUserId(principal);
+        Order order = orderService.getOrderById(id, userId); // Validates permission
+
+        byte[] pdfBytes = invoiceService.generateInvoicePdf(id);
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=invoice-" + order.getOrderCode() + ".pdf")
+                .body(pdfBytes);
+    }
+
+    // 9. GET: Lấy lịch sử trạng thái đơn hàng
+    @GetMapping("/{id}/history")
+    public ResponseEntity<ApiResponse<List<OrderStatusHistory>>> getOrderHistory(
+            @PathVariable Integer id,
+            Principal principal
+    ) {
+        Integer userId = getUserId(principal);
+        Order order = orderService.getOrderById(id, userId);
+        List<OrderStatusHistory> history = orderStatusHistoryRepository.findByOrderIdOrderByTimestampAsc(order.getId());
+        return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử đơn hàng thành công!", history));
     }
 
     private OrderDTO convertToDTO(Order order) {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import orderService from '../services/orderService';
 import addressService from '../services/addressService';
+import api from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import { formatPrice } from '../utils/helpers';
 import { useToast } from '../utils/toast';
@@ -23,6 +24,40 @@ function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Shipping options states
+    const [shippingOptions, setShippingOptions] = useState([]);
+    const [selectedShippingOption, setSelectedShippingOption] = useState(null);
+    const [shippingFee, setShippingFee] = useState(30000);
+
+    // Calculate shipping fee dynamically when address changes
+    useEffect(() => {
+        if (!shippingAddress || shippingAddress.trim() === '') {
+            setShippingOptions([]);
+            setSelectedShippingOption(null);
+            setShippingFee(30000);
+            return;
+        }
+
+        // Try to guess city (split by comma and get last element)
+        const parts = shippingAddress.split(',');
+        const city = parts[parts.length - 1].trim();
+
+        api.get(`/api/shipping/calculate?city=${encodeURIComponent(city)}`)
+            .then(res => {
+                if (res && res.data && res.data.success && Array.isArray(res.data.data)) {
+                    setShippingOptions(res.data.data);
+                    if (res.data.data.length > 0) {
+                        setSelectedShippingOption(res.data.data[0]);
+                        setShippingFee(res.data.data[0].fee);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Error calculating shipping fee:", err);
+                setShippingFee(30000); // fallback
+            });
+    }, [shippingAddress]);
 
     // Fetch address book on mount
     useEffect(() => {
@@ -68,8 +103,8 @@ function Checkout() {
     };
 
     const subtotal = cartItems.reduce((sum, item) => sum + getPrice(item) * item.quantity, 0);
-    const shippingFee = subtotal > 500000 || subtotal === 0 ? 0 : 30000;
-    const total = subtotal + shippingFee;
+    const finalShippingFee = subtotal > 500000 ? 0 : shippingFee;
+    const total = subtotal + finalShippingFee;
 
     const handleSubmitOrder = async (e) => {
         e.preventDefault();
@@ -96,6 +131,20 @@ function Checkout() {
                 // Navigate to success page or simulated payment gateway
                 if (paymentMethod === 'COD') {
                     navigate(`/order-success?code=${createdOrder.orderCode}`);
+                } else if (paymentMethod === 'VNPAY') {
+                    try {
+                        const payRes = await api.post(`/api/payments/create-url/${createdOrder.id}`);
+                        if (payRes && payRes.data && payRes.data.success && payRes.data.data) {
+                            window.location.href = payRes.data.data;
+                        } else {
+                            toast.error("Không khởi tạo được link thanh toán VNPay!");
+                            navigate(`/orders/${createdOrder.id}`);
+                        }
+                    } catch (payErr) {
+                        console.error("VNPay redirect error:", payErr);
+                        toast.error("Không khởi tạo được cổng thanh toán VNPay!");
+                        navigate(`/orders/${createdOrder.id}`);
+                    }
                 } else {
                     navigate(`/payment-simulation?orderId=${createdOrder.id}&code=${createdOrder.orderCode}&method=${paymentMethod}`);
                 }
@@ -180,6 +229,38 @@ function Checkout() {
                                 required
                             />
                         </div>
+                        {shippingOptions.length > 0 && (
+                            <div className="form-group" style={{ marginTop: '15px' }}>
+                                <label className="form-label">Chọn đơn vị vận chuyển</label>
+                                <div className="shipping-options-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {shippingOptions.map(option => (
+                                        <label 
+                                            key={option.id} 
+                                            className={`payment-method-label ${selectedShippingOption?.id === option.id ? 'active' : ''}`}
+                                            style={{ padding: '12px var(--space-4)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--border-radius-sm)' }}
+                                        >
+                                            <input 
+                                                type="radio" 
+                                                name="shippingOption" 
+                                                value={option.id}
+                                                checked={selectedShippingOption?.id === option.id}
+                                                onChange={() => {
+                                                    setSelectedShippingOption(option);
+                                                    setShippingFee(option.fee);
+                                                }}
+                                            />
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                                                    <span style={{ color: 'var(--color-gray-900)' }}>{option.name}</span>
+                                                    <span style={{ color: 'var(--color-primary)' }}>{formatPrice(option.fee)}</span>
+                                                </div>
+                                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-gray-500)', marginTop: '2px' }}>Dự kiến nhận hàng: {option.estimatedDelivery}</div>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Payment Method */}
@@ -266,7 +347,7 @@ function Checkout() {
 
                     <div className="summary-row">
                         <span>Phí giao hàng:</span>
-                        <span>{shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee)}</span>
+                        <span>{finalShippingFee === 0 ? 'Miễn phí' : formatPrice(finalShippingFee)}</span>
                     </div>
 
                     <div className="summary-row total-row" style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)' }}>

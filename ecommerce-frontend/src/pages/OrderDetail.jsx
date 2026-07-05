@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import orderService from '../services/orderService';
 import returnService from '../services/returnService';
+import api from '../services/api';
 
 function OrderDetail() {
     const { id } = useParams();
@@ -9,6 +10,7 @@ function OrderDetail() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [history, setHistory] = useState([]);
     
     // Return Request states
     const [returnRequest, setReturnRequest] = useState(null);
@@ -22,6 +24,15 @@ function OrderDetail() {
             .then(res => {
                 if (res && res.success && res.data) {
                     setOrder(res.data);
+                    
+                    // Fetch order status history timeline
+                    api.get(`/api/orders/${res.data.id}/history`)
+                        .then(hRes => {
+                            if (hRes && hRes.data && hRes.data.success) {
+                                setHistory(hRes.data.data || []);
+                            }
+                        })
+                        .catch(err => console.error("Error loading order status history:", err));
                     
                     // Fetch return request if order is delivered
                     if (res.data.status === 'DELIVERED') {
@@ -92,6 +103,25 @@ function OrderDetail() {
         }
     };
 
+    const handleDownloadInvoice = async () => {
+        try {
+            const response = await api.get(`/api/orders/${order.id}/invoice`, {
+                responseType: 'blob'
+            });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice-${order.orderCode}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (err) {
+            console.error("Invoice download error:", err);
+            alert("Không tải được hóa đơn: " + err.message);
+        }
+    };
+
     const getStatusStyle = (status) => {
         switch (status) {
             case 'PENDING':
@@ -131,6 +161,47 @@ function OrderDetail() {
                     {statusStyle.text}
                 </div>
             </div>
+
+            {history.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', marginBottom: '25px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', borderBottom: '1px solid #f3f4f6', paddingBottom: '10px' }}>
+                        Trạng thái đơn hàng
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', position: 'relative', paddingLeft: '20px' }}>
+                        {history.map((h, index) => {
+                            const isLast = index === history.length - 1;
+                            return (
+                                <div key={h.id} style={{ display: 'flex', gap: '15px', position: 'relative' }}>
+                                    {index !== history.length - 1 && (
+                                        <div style={{ position: 'absolute', left: '-13px', top: '15px', bottom: '-20px', width: '2px', backgroundColor: '#e5e7eb' }} />
+                                    )}
+                                    <div style={{ 
+                                        position: 'absolute', 
+                                        left: '-20px', 
+                                        top: '4px', 
+                                        width: '14px', 
+                                        height: '14px', 
+                                        borderRadius: '50%', 
+                                        backgroundColor: isLast ? 'var(--color-primary, #3643ba)' : '#cbd5e1', 
+                                        border: isLast ? '3px solid #e0e7ff' : 'none',
+                                        zIndex: 1 
+                                    }} />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: isLast ? 'bold' : 'normal', color: isLast ? 'var(--color-primary, #3643ba)' : '#4b5563' }}>
+                                                {h.description}
+                                            </span>
+                                            <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                                {new Date(h.timestamp).toLocaleString('vi-VN')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap', marginBottom: '30px' }}>
                 {/* Product List in Order */}
@@ -175,6 +246,19 @@ function OrderDetail() {
                         <p style={{ fontSize: '14px', color: '#4b5563', margin: 0, fontWeight: 'bold' }}>
                             {order.paymentMethod === 'COD' ? 'Thanh toán COD' : order.paymentMethod}
                         </p>
+                    </div>
+
+                    <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Hóa đơn đơn hàng</h3>
+                        <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Tải hóa đơn bán hàng định dạng PDF chính thức cho đơn hàng này.</p>
+                        <button 
+                            onClick={handleDownloadInvoice}
+                            style={{ width: '100%', padding: '10px 0', background: '#4b5563', color: 'white', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
+                            onMouseEnter={(e) => e.target.style.background = '#374151'}
+                            onMouseLeave={(e) => e.target.style.background = '#4b5563'}
+                        >
+                            TẢI HÓA ĐƠN PDF
+                        </button>
                     </div>
 
                     {order.status === 'PENDING' && (
