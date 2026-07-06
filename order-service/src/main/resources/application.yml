@@ -4,3 +4,19 @@ server:
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommerce_order
+    username: postgres
+    password: your_secure_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: orders
+  flyway:
+    enabled: true
+    default-schema: orders
+    schemas: orders,inventory,public
+    create-schemas: true

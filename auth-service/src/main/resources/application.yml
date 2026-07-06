@@ -4,3 +4,19 @@ server:
 spring:
   application:
     name: auth-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommerce_auth
+    username: postgres
+    password: your_secure_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: auth
+  flyway:
+    enabled: true
+    default-schema: auth
+    schemas: auth
+    create-schemas: true
