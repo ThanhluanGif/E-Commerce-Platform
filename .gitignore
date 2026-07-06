@@ -1,10 +1,22 @@
-### IntelliJ IDEA ###
+# Gradle files
+.gradle
+build/
+/build/
+**/build/
+.gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-.kotlin
 
-### Eclipse ###
+# Eclipse
 .apt_generated
 .classpath
 .factorypath
@@ -16,15 +28,30 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# VS Code
 .vscode/
 
-### Mac OS ###
+# MacOS
 .DS_Store
+
+# Log files
+*.log
+logs/
+**/logs/
+
+# Local configuration & Secrets
+.env
+.env.local
+**/application-local.yml
+**/application-local.properties
+
+# Docker local data directories
+**/docker/data/
+docker/data/
