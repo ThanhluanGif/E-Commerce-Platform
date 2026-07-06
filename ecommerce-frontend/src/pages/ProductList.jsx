@@ -48,6 +48,23 @@ function ProductList() {
 
     // Fetch products when filters or pagination changes
     useEffect(() => {
+        const isVisualSearch = searchParams.get('searchMode') === 'visual';
+        if (isVisualSearch) {
+            setLoading(true);
+            try {
+                const stored = sessionStorage.getItem('visualSearchResults');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    setProducts(parsed);
+                    setTotalPages(1);
+                    setLoading(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Error reading visual search results from session:", err);
+            }
+        }
+
         setLoading(true);
         const params = {
             page: page,

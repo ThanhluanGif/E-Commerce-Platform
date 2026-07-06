@@ -4,6 +4,127 @@ import orderService from '../services/orderService';
 import returnService from '../services/returnService';
 import api from '../services/api';
 
+// component theo dõi hành trình giao hàng realtime (Phase 19)
+const DeliveryTrackingMap = ({ order }) => {
+    const [progress, setProgress] = useState(0);
+    
+    useEffect(() => {
+        if (order?.status === 'SHIPPING') {
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 100) return 0; // Loop the animation
+                    return prev + 1;
+                });
+            }, 60);
+            return () => clearInterval(interval);
+        } else if (order?.status === 'DELIVERED') {
+            setProgress(100);
+        } else {
+            setProgress(0);
+        }
+    }, [order]);
+
+    const getMapDetails = () => {
+        const address = (order?.shippingAddress || '').toLowerCase();
+        let warehouseName = "Kho Tổng E-Shop (Hà Nội)";
+        let customerLocation = "Hà Nội";
+        if (order?.warehouse) {
+            warehouseName = order.warehouse.name + " (" + (order.warehouse.city || "Việt Nam") + ")";
+        } else if (address.includes("hồ chí minh") || address.includes("tphcm") || address.includes("sài gòn") || address.includes("hcm")) {
+            warehouseName = "Kho Miền Nam (TP.HCM)";
+            customerLocation = "TP. Hồ Chí Minh";
+        }
+        
+        return { warehouseName, customerLocation };
+    };
+
+    const { warehouseName } = getMapDetails();
+
+    return (
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', marginTop: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#1f2937', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '6px', marginTop: 0 }}>
+                🚚 Bản Đồ Hành Trình Realtime
+            </h3>
+            
+            {/* The Stylized Map Drawing */}
+            <div style={{ position: 'relative', height: '120px', background: '#eff6ff', borderRadius: '8px', overflow: 'hidden', border: '1px dashed #bfdbfe', marginBottom: '15px' }}>
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(#1e3a8a 1px, transparent 0)', backgroundSize: '12px 12px' }} />
+                
+                <svg style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+                    <path 
+                        d="M 40 60 Q 135 15 230 60" 
+                        fill="none" 
+                        stroke="#bfdbfe" 
+                        strokeWidth="3" 
+                        strokeDasharray="4,4"
+                    />
+                    {order?.status === 'SHIPPING' && (
+                        <path 
+                            d="M 40 60 Q 135 15 230 60" 
+                            fill="none" 
+                            stroke="#3b82f6" 
+                            strokeWidth="3" 
+                            strokeDasharray="4,4"
+                            strokeDashoffset={-progress * 1.5}
+                        />
+                    )}
+                    {order?.status === 'DELIVERED' && (
+                        <path 
+                            d="M 40 60 Q 135 15 230 60" 
+                            fill="none" 
+                            stroke="#10b981" 
+                            strokeWidth="3"
+                        />
+                    )}
+                </svg>
+
+                {/* Warehouse Marker */}
+                <div style={{ position: 'absolute', left: '25px', top: '45px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '20px' }}>🏭</div>
+                    <span style={{ fontSize: '9px', fontWeight: 'bold', background: '#1e3a8a', color: 'white', padding: '1px 4px', borderRadius: '3px', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                        Kho Hàng
+                    </span>
+                </div>
+
+                {/* Customer Marker */}
+                <div style={{ position: 'absolute', left: '210px', top: '45px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '20px' }}>📍</div>
+                    <span style={{ fontSize: '9px', fontWeight: 'bold', background: '#ef4444', color: 'white', padding: '1px 4px', borderRadius: '3px', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                        Nhận Hàng
+                    </span>
+                </div>
+
+                {/* Moving Truck */}
+                {order?.status !== 'PENDING' && order?.status !== 'CANCELLED' && (
+                    <div 
+                        style={{ 
+                            position: 'absolute',
+                            left: `${40 + (230 - 40) * (progress / 100.0) - 12}px`,
+                            top: `${60 - 40 * Math.sin(Math.PI * (progress / 100.0)) - 18}px`,
+                            fontSize: '18px',
+                            transition: 'all 0.1s linear'
+                        }}
+                    >
+                        🚚
+                    </div>
+                )}
+            </div>
+
+            {/* Tracking Status details */}
+            <div style={{ fontSize: '12px', color: '#4b5563', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div>📍 **Xuất phát**: <span style={{ color: '#1e293b' }}>{warehouseName}</span></div>
+                <div>🏠 **Giao đến**: <span style={{ color: '#1e293b' }}>{order?.shippingAddress}</span></div>
+                <div style={{ marginTop: '5px', padding: '8px', borderRadius: '6px', background: order?.status === 'SHIPPING' ? '#eff6ff' : (order?.status === 'DELIVERED' ? '#ecfdf5' : '#f9fafb'), color: order?.status === 'SHIPPING' ? '#1d4ed8' : (order?.status === 'DELIVERED' ? '#047857' : '#475569'), fontWeight: 'bold', textAlign: 'center' }}>
+                    {order?.status === 'PENDING' && "⏳ Đơn hàng đang được chuẩn bị tại kho..."}
+                    {order?.status === 'SHIPPING' && `⚡ Đang giao hàng (Tiến trình: ${progress}%)`}
+                    {order?.status === 'DELIVERED' && "✅ Đơn hàng đã giao thành công!"}
+                    {order?.status === 'CANCELLED' && "❌ Đơn hàng đã bị hủy."}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function OrderDetail() {
     const { id } = useParams();
     
@@ -311,6 +432,9 @@ function OrderDetail() {
                             )}
                         </div>
                     )}
+
+                    {/* Delivery Map Component */}
+                    <DeliveryTrackingMap order={order} />
                 </div>
             </div>
 

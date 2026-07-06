@@ -27,6 +27,7 @@ import FlashSale from './pages/FlashSale';
 import Notifications from './pages/Notifications';
 import PaymentResult from './pages/PaymentResult';
 import Loyalty from './pages/Loyalty';
+import Referral from './pages/Referral';
 import MainLayout from './components/MainLayout';
 import AuthLayout from './components/AuthLayout';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
@@ -63,6 +64,7 @@ function App() {
                             <Route path="/seller" element={<SellerDashboard />} />
                             <Route path="/notifications" element={<Notifications />} />
                             <Route path="/loyalty" element={<Loyalty />} />
+                            <Route path="/referral" element={<Referral />} />
                         </Route>
 
                         {/* Admin Routes */}

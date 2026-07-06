@@ -45,6 +45,10 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false) // Tự động ánh xạ cột user_id dưới database
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems;
 

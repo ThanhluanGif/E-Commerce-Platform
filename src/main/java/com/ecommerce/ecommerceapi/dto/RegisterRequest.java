@@ -31,4 +31,6 @@ public class RegisterRequest {
     private String phone;
 
     private String avatarUrl;
+
+    private String referralCode;
 }

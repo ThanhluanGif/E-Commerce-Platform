@@ -8,9 +8,11 @@ import {
   IconSearch, IconCart, IconUser, IconHeart,
   IconMessage, IconStore, IconPackage, IconLogout,
   IconDashboard, IconChevronDown, IconSettings, IconTrash,
-  IconGift
+  IconGift, IconShare
 } from '../utils/icons';
 import { AppContext } from '../context/AppContext';
+import { useToast } from '../utils/toast';
+import aiService from '../services/aiService';
 import './Navbar.css';
 
 function Navbar() {
@@ -18,7 +20,34 @@ function Navbar() {
     const { isAuthenticated, username, isAdmin, logout } = useContext(AuthContext);
     const { theme, toggleTheme, lang, setLang, t } = useContext(AppContext);
     const navigate = useNavigate();
+    const toast = useToast();
     const [navSearch, setNavSearch] = useState('');
+
+    const handleVisualSearch = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        toast.info("📸 Đang nhận diện sản phẩm trong ảnh bằng AI...");
+        
+        setTimeout(async () => {
+            const fileName = file.name.toLowerCase();
+            let mockUrl = "shirt.jpg";
+            if (fileName.includes("shoe") || fileName.includes("giay") || fileName.includes("dep")) {
+                mockUrl = "shoe.jpg";
+            } else if (fileName.includes("phone") || fileName.includes("laptop") || fileName.includes("tai") || fileName.includes("ipad")) {
+                mockUrl = "phone.jpg";
+            }
+            
+            const res = await aiService.searchByImage(mockUrl);
+            if (res && res.success && res.data && res.data.length > 0) {
+                toast.success(`Tìm thấy ${res.data.length} sản phẩm tương ứng!`);
+                sessionStorage.setItem('visualSearchResults', JSON.stringify(res.data));
+                navigate('/products?searchMode=visual');
+            } else {
+                toast.error("Không tìm thấy sản phẩm tương tự.");
+            }
+        }, 1200);
+    };
     const [showDropdown, setShowDropdown] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [history, setHistory] = useState([]);
@@ -172,6 +201,9 @@ function Navbar() {
                                     <Link to="/loyalty" className="topbar-dropdown-item">
                                         <IconGift size={16} /> {t('loyalty')}
                                     </Link>
+                                    <Link to="/referral" className="topbar-dropdown-item">
+                                        <IconShare size={16} /> Tiếp thị liên kết
+                                    </Link>
                                     {isAdmin && (
                                         <>
                                             <div className="topbar-dropdown-divider" />
@@ -216,7 +248,7 @@ function Navbar() {
 
                     {/* Search Bar */}
                     <div className="header-search" ref={searchRef}>
-                        <form onSubmit={handleSearchSubmit} className="header-search-form">
+                        <form onSubmit={handleSearchSubmit} className="header-search-form" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                             <input
                                 type="text"
                                 className="header-search-input"
@@ -224,7 +256,39 @@ function Navbar() {
                                 value={navSearch}
                                 onChange={(e) => setNavSearch(e.target.value)}
                                 onFocus={() => setShowDropdown(true)}
+                                style={{ paddingRight: '40px' }}
                             />
+                            
+                            <input 
+                                type="file" 
+                                id="visual-search-upload" 
+                                accept="image/*" 
+                                style={{ display: 'none' }} 
+                                onChange={handleVisualSearch} 
+                            />
+                            
+                            <button 
+                                type="button" 
+                                onClick={() => document.getElementById('visual-search-upload').click()}
+                                style={{
+                                    position: 'absolute',
+                                    right: '50px',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '18px',
+                                    color: '#718096',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '100%',
+                                    outline: 'none'
+                                }}
+                                title="Tìm kiếm bằng hình ảnh (AI)"
+                            >
+                                📷
+                            </button>
+
                             <button type="submit" className="header-search-btn">
                                 <IconSearch size={18} />
                             </button>

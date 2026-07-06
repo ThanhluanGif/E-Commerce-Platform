@@ -10,4 +10,5 @@ import java.util.List;
 public interface FlashSaleRepository extends JpaRepository<FlashSale, Integer> {
     List<FlashSale> findByActiveTrue();
     List<FlashSale> findByActiveTrueAndStartTimeBeforeAndEndTimeAfter(LocalDateTime now1, LocalDateTime now2);
+    List<FlashSale> findByActiveTrueAndStartTimeBetween(LocalDateTime start, LocalDateTime end);
 }

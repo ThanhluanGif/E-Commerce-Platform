@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     container_name: ecommerce-db
     restart: always
     environment:
-      MYSQL_DATABASE: ecommerce_db
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - pg-data:/var/lib/postgresql/data
 
   backend:
     build:
@@ -22,8 +23,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ecommerce_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ecommerce_db
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: root
       JWT_SECRET: ChuoidebaoMatSieuCapVipProNhatDinhKhongDuocDeLo123456789
     depends_on:
@@ -43,4 +44,4 @@ services:
       - backend
 
 volumes:
-  mysql-data:
+  pg-data:

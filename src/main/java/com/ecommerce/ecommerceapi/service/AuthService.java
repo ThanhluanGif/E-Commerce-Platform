@@ -41,6 +41,9 @@ public class AuthService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private com.ecommerce.ecommerceapi.repository.ReferralRepository referralRepository;
+
     public UserDTO register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new DuplicateResourceException("Tên đăng nhập đã tồn tại!");
@@ -48,6 +51,12 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email đã được đăng ký!");
         }
+
+        // Tạo mã referral code duy nhất cho người dùng mới
+        String selfReferralCode;
+        do {
+            selfReferralCode = "REF-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        } while (userRepository.findByReferralCode(selfReferralCode).isPresent());
 
         User user = User.builder()
                 .username(request.getUsername())
@@ -57,9 +66,24 @@ public class AuthService {
                 .address(request.getAddress())
                 .phone(request.getPhone())
                 .avatarUrl(request.getAvatarUrl())
+                .referralCode(selfReferralCode)
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        // Xử lý mã giới thiệu nếu người đăng ký nhập vào
+        if (request.getReferralCode() != null && !request.getReferralCode().trim().isEmpty()) {
+            userRepository.findByReferralCode(request.getReferralCode().trim())
+                .ifPresent(referrer -> {
+                    com.ecommerce.ecommerceapi.entity.Referral referral = com.ecommerce.ecommerceapi.entity.Referral.builder()
+                            .referrer(referrer)
+                            .referee(savedUser)
+                            .status("PENDING")
+                            .rewarded(false)
+                            .build();
+                    referralRepository.save(referral);
+                });
+        }
 
         try {
             emailService.sendWelcomeEmail(savedUser);
@@ -102,6 +126,7 @@ public class AuthService {
                 .address(user.getAddress())
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
+                .referralCode(user.getReferralCode())
                 .build();
     }
 

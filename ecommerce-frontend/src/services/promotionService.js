@@ -14,6 +14,18 @@ const promotionService = {
       params: { voucherCode }
     });
     return response.data;
+  },
+  subscribeFlashSale: async (id) => {
+    const response = await api.post(`/api/flash-sales/${id}/subscribe`);
+    return response.data;
+  },
+  unsubscribeFlashSale: async (id) => {
+    const response = await api.delete(`/api/flash-sales/${id}/unsubscribe`);
+    return response.data;
+  },
+  isSubscribedFlashSale: async (id) => {
+    const response = await api.get(`/api/flash-sales/${id}/is-subscribed`);
+    return response.data;
   }
 };
 

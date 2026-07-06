@@ -39,4 +39,7 @@ public class User {
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
+
+    @Column(name = "referral_code", length = 50, unique = true)
+    private String referralCode;
 }

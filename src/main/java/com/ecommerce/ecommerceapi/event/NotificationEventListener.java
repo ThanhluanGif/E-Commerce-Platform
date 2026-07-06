@@ -28,6 +28,9 @@ public class NotificationEventListener {
     @Autowired
     private LoyaltyService loyaltyService;
 
+    @Autowired
+    private com.ecommerce.ecommerceapi.service.ReferralService referralService;
+
     @EventListener
     public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
         Order order = event.getOrder();
@@ -56,15 +59,16 @@ public class NotificationEventListener {
             }
         }
 
-        // Nếu đơn hàng hoàn thành (DELIVERED), cộng điểm tích lũy
+        // Nếu đơn hàng hoàn thành (DELIVERED), cộng điểm tích lũy và xử lý giới thiệu
         if (order.getStatus() == OrderStatus.DELIVERED) {
             try {
                 int points = order.getTotalPrice().divide(java.math.BigDecimal.valueOf(10000)).intValue();
                 if (points > 0) {
                     loyaltyService.addPoints(order.getUser().getId(), points, "Hoàn thành đơn hàng #" + order.getOrderCode());
                 }
+                referralService.processOrderDelivery(order);
             } catch (Exception e) {
-                System.err.println("Lỗi cộng điểm tích lũy: " + e.getMessage());
+                System.err.println("Lỗi cộng điểm tích lũy/giới thiệu: " + e.getMessage());
             }
         }
 

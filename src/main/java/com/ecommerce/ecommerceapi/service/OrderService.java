@@ -50,6 +50,9 @@ public class OrderService {
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
+    private WarehouseService warehouseService;
+
+    @Autowired
     private LoyaltyService loyaltyService;
 
     public Order createOrder(Integer userId, OrderRequest request) {
@@ -146,6 +149,18 @@ public class OrderService {
 
         order.setTotalPrice(finalTotal);
         order.setOrderItems(orderItems);
+
+        // Chọn kho hàng tối ưu và trừ tồn kho chi tiết
+        Warehouse optimalWarehouse = warehouseService.selectOptimalWarehouse(request.getShippingAddress(), orderItems);
+        order.setWarehouse(optimalWarehouse);
+
+        if (optimalWarehouse != null) {
+            for (OrderItem item : orderItems) {
+                if (item.getVariant() != null) {
+                    warehouseService.deductStock(optimalWarehouse, item.getVariant(), item.getQuantity());
+                }
+            }
+        }
 
         // Save order (will cascade save order items because of CascadeType.ALL)
         Order savedOrder = orderRepository.save(order);
@@ -247,6 +262,11 @@ public class OrderService {
                     ProductVariant variant = item.getVariant();
                     variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
                     productVariantRepository.save(variant);
+
+                    // Hoàn trả tồn kho tại kho được chọn
+                    if (order.getWarehouse() != null) {
+                        warehouseService.restoreStock(order.getWarehouse(), variant, item.getQuantity());
+                    }
                 } else {
                     Product product = item.getProduct();
                     product.setStockQuantity(product.getStockQuantity() + item.getQuantity());

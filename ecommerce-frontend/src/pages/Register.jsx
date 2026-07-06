@@ -1,25 +1,33 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
 
 function Register() {
-    // 1. Khai báo các state để quản lý dữ liệu ô nhập
+    const [searchParams] = useSearchParams();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const [message, setMessage] = useState('');
     const [isLanguageOpen, setIsLanguageOpen] = useState(false);
 
     const navigate = useNavigate();
 
-    // 2. Hàm xử lý khi bấm nút Đăng Ký
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            setReferralCode(ref);
+        }
+    }, [searchParams]);
+
     const handleRegister = async (e) => {
-        e.preventDefault(); // Chặn tải lại trang
+        e.preventDefault();
 
         const registerData = {
             username: username,
             password: password,
-            email: email
+            email: email,
+            referralCode: referralCode
         };
 
         try {
@@ -33,6 +41,7 @@ function Register() {
                 setUsername('');
                 setPassword('');
                 setEmail('');
+                setReferralCode('');
             }
         } catch (err) {
             setMessage(`❌ Lỗi: ${err.response?.data?.message || err.message || 'Đăng ký thất bại!'}`);
@@ -80,6 +89,17 @@ function Register() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             style={{ width: '100%', padding: '12px', border: '1px solid #767676', borderRadius: '2px', fontSize: '15px', boxSizing: 'border-box' }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: '500' }}>Mã giới thiệu (Không bắt buộc)</label>
+                        <input
+                            type="text"
+                            placeholder="Mã giới thiệu (Ví dụ: REF-XXXXXX)"
+                            value={referralCode}
+                            onChange={(e) => setReferralCode(e.target.value)}
+                            style={{ width: '100%', padding: '12px', border: '1px solid #ccd0d5', borderRadius: '2px', fontSize: '15px', boxSizing: 'border-box' }}
                         />
                     </div>
 

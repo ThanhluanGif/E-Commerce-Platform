@@ -79,6 +79,59 @@ public class EmailService {
         sendEmail(user.getEmail(), "Yêu cầu khôi phục mật khẩu tài khoản E-Shop", htmlContent);
     }
 
+    @Async
+    public void sendFlashSaleReminderEmail(User user, com.ecommerce.ecommerceapi.entity.FlashSale flashSale) {
+        if (mailSender == null) {
+            System.out.println("MailSender not configured. Flash sale reminder email printing: Flash Sale " + flashSale.getName() + " for " + user.getUsername());
+            return;
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("username", user.getUsername());
+        variables.put("saleName", flashSale.getName());
+        variables.put("startTime", flashSale.getStartTime().toString());
+        variables.put("flashSaleUrl", frontendUrl + "/flash-sale");
+
+        String htmlContent = generateHtmlContent("email/flashsale-reminder", variables);
+        sendEmail(user.getEmail(), "⚡ Nhắc nhở: Flash Sale '" + flashSale.getName() + "' sắp diễn ra tại E-Shop!", htmlContent);
+    }
+
+    @Async
+    public void sendAbandonedCartEmail(User user, String voucherCode, String discountDesc) {
+        if (mailSender == null) {
+            System.out.println("MailSender not configured. Abandoned cart email printing: Voucher " + voucherCode + " for " + user.getUsername());
+            return;
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("username", user.getUsername());
+        variables.put("voucherCode", voucherCode);
+        variables.put("voucherDiscount", discountDesc);
+        variables.put("cartUrl", frontendUrl + "/cart");
+
+        String htmlContent = generateHtmlContent("email/cart-recovery", variables);
+        sendEmail(user.getEmail(), "🛒 Bạn quên sản phẩm trong giỏ hàng kìa! Nhận ngay ưu đãi giảm giá!", htmlContent);
+    }
+
+    @Async
+    public void sendLowStockAlertEmail(String toEmail, String variantName, String sku, String warehouseName, int quantity) {
+        if (mailSender == null) {
+            System.out.println("MailSender not configured. Low stock alert: " + variantName + " (" + sku + ") in " + warehouseName + " is at " + quantity);
+            return;
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("⚠️ CẢNH BÁO: Tồn kho xuống dưới mức tối thiểu!");
+            helper.setText("Sản phẩm biến thể: " + variantName + " (SKU: " + sku + ") tại kho: " + warehouseName + " hiện chỉ còn: " + quantity + " sản phẩm. Vui lòng nhập hàng thêm!", false);
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Gửi email cảnh báo thất bại đến " + toEmail + ": " + e.getMessage());
+        }
+    }
+
     private String generateHtmlContent(String templateName, Map<String, Object> variables) {
         Context context = new Context();
         context.setVariables(variables);

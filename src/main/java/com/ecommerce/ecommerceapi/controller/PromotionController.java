@@ -137,4 +137,37 @@ public class PromotionController {
         FlashSaleItem item = flashSaleService.addProductToFlashSale(id, itemDto);
         return ResponseEntity.ok(ApiResponse.success("Thêm sản phẩm vào Flash Sale thành công!", item));
     }
+
+    // 10. POST: Đăng ký nhận thông báo cho Flash Sale
+    @PostMapping("/api/flash-sales/{id}/subscribe")
+    public ResponseEntity<ApiResponse<Void>> subscribeFlashSale(Principal principal, @PathVariable Integer id) {
+        Integer userId = getUserId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Chưa đăng nhập!"));
+        }
+        flashSaleService.subscribeToFlashSale(userId, id);
+        return ResponseEntity.ok(ApiResponse.success("Đăng ký nhận thông báo Flash Sale thành công!"));
+    }
+
+    // 11. DELETE: Hủy nhận thông báo cho Flash Sale
+    @DeleteMapping("/api/flash-sales/{id}/unsubscribe")
+    public ResponseEntity<ApiResponse<Void>> unsubscribeFlashSale(Principal principal, @PathVariable Integer id) {
+        Integer userId = getUserId(principal);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Chưa đăng nhập!"));
+        }
+        flashSaleService.unsubscribeFromFlashSale(userId, id);
+        return ResponseEntity.ok(ApiResponse.success("Hủy nhận thông báo Flash Sale thành công!"));
+    }
+
+    // 12. GET: Kiểm tra trạng thái đăng ký nhận thông báo
+    @GetMapping("/api/flash-sales/{id}/is-subscribed")
+    public ResponseEntity<ApiResponse<Boolean>> isSubscribedFlashSale(Principal principal, @PathVariable Integer id) {
+        Integer userId = getUserId(principal);
+        if (userId == null) {
+            return ResponseEntity.ok(ApiResponse.success("Chưa đăng nhập", false));
+        }
+        boolean status = flashSaleService.isSubscribed(userId, id);
+        return ResponseEntity.ok(ApiResponse.success("Lấy trạng thái đăng ký thành công!", status));
+    }
 }

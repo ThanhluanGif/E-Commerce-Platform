@@ -14,4 +14,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Integer> {
     Optional<CartItem> findByUserIdAndProductIdAndVariantId(Integer userId, Integer productId, Integer variantId);
     Optional<CartItem> findByUserIdAndProductIdAndVariantIsNull(Integer userId, Integer productId);
     void deleteByUserId(Integer userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT c.user.id FROM CartItem c WHERE c.updatedAt < :time")
+    List<Integer> findUserIdsWithCartItemsOlderThan(@org.springframework.data.repository.query.Param("time") java.time.LocalDateTime time);
 }

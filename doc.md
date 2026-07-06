@@ -4,8 +4,8 @@
 > **Backend:** Spring Boot 4.1.0 · Java 17 · MySQL · JWT · Spring Security  
 > **Frontend:** React 19 · React Router 7 · Context API  
 > **Architecture:** Monolithic (hướng tới Modular Monolith)  
-> **Cập nhật lần cuối:** 2026-07-04  
-> **Trạng thái:** 🟡 Core MVP hoàn thành — Đang tiến hành Audit & Lên Kế hoạch Phase 10+
+> **Cập nhật lần cuối:** 2026-07-05  
+> **Trạng thái:** 🟢 Core MVP & Phases 10-20 đã hoàn thành — Lên Kế hoạch cho các tính năng nâng cao mới (Phase 21+)
 
 ---
 
@@ -19,7 +19,9 @@
 6. [Kế Hoạch Nâng Cấp Tính Năng (Phase 10B - 10D)](#6-kế-hoạch-nâng-cấp-tính-năng-phase-10b---10d)
 7. [Kế Hoạch Triển Khai DevOps & Production (Phase 11)](#7-kế-hoạch-triển-khai-devops--production-phase-11)
 8. [Cấu Trúc Thư Mục Chuẩn Hóa](#8-cấu-trúc-thư-mục-chuẩn-hóa)
-9. [Kế Hoạch Phát Triển Tiếp Theo (Phase 12 - 16)](#9-kế-hoạch-phát-triển-tiếp-theo-phase-12---16)
+9. [Các Giai Đoạn Đã Hoàn Thành (Phase 12 - 17)](#9-các-giai-đoạn-đã-hoàn-thành-phase-12---17)
+10. [Kế Hoạch Phát Triển Tiếp Theo (Phases 18 - 25)](#10-kế-hoạch-phát-triển-tiếp-theo-phases-18---25)
+11. [Hướng Dẫn Tích Hợp PostgreSQL](#11-hướng-dẫn-tích-hợp--cấu-hình-postgresql-postgresql-integration-guide)
 
 ---
 
@@ -363,13 +365,13 @@ ecommerce-frontend/src/
 
 ---
 
-## 9. Kế Hoạch Phát Triển Tiếp Theo (Phase 12 - 16)
+## 9. Các Giai Đoạn Đã Hoàn Thành (Phase 12 - 17)
 
-Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các Phase từ 12 đến 16, phân chia rõ ràng các công việc cần làm ở Backend (BE) và Frontend (FE).
+Dưới đây là chi tiết kỹ thuật các tính năng và cải tiến đã được hiện thực hóa từ Giai đoạn 12 đến Giai đoạn 17, bao gồm cả hai phía Backend (Spring Boot) và Frontend (React).
 
 ---
 
-### 🔔 Phase 12: Notification System & Session Management (8 ngày)
+### 🔔 Phase 12: Notification System & Session Management (8 ngày) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Xây dựng hệ thống thông báo đa kênh (Realtime WebSocket, Database Notification, và Async Email) kết hợp cơ chế Refresh Token Rotation để bảo vệ phiên đăng nhập lâu dài của người dùng.
 
@@ -426,7 +428,7 @@ Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các
 
 ---
 
-### 💳 Phase 13: Payment Gateways, Shipping & Invoicing (12 ngày)
+### 💳 Phase 13: Payment Gateways, Shipping & Invoicing (12 ngày) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Tích hợp các cổng thanh toán phổ biến tại Việt Nam (VNPay, MoMo) với cơ chế bảo mật checksum/IPN, kết hợp tính toán phí vận chuyển tự động và sinh hóa đơn PDF chuyên nghiệp.
 
@@ -469,7 +471,7 @@ Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các
 
 ---
 
-### 🚀 Phase 14: Redis Caching, UX & Mobile (13 ngày)
+### 🚀 Phase 14: Redis Caching, UX & Mobile (13 ngày) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Tăng tốc độ phản hồi hệ thống (giảm tải DB bằng Redis), cải tiến trải nghiệm người dùng frontend (Skeleton, Error Boundary, a11y) và tối ưu hóa hiển thị trên di động dưới dạng PWA.
 
@@ -509,7 +511,7 @@ Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các
 
 ---
 
-### 🧠 Phase 15: Recommendation Engine, Analytics & Loyalty System (12 ngày)
+### 🧠 Phase 15: Recommendation Engine, Analytics & Loyalty System (12 ngày) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Áp dụng thuật toán gợi ý sản phẩm thông minh dựa trên hành vi người dùng, cung cấp các biểu đồ báo cáo trực quan cho Admin/Seller, và giữ chân khách hàng bằng hệ thống Điểm thưởng & Hạng thành viên.
 
@@ -550,7 +552,7 @@ Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các
 
 ---
 
-### 🛡️ Phase 16: Testing, Quality Assurance & Security Hardening (11 ngày)
+### 🛡️ Phase 16: Testing, Quality Assurance & Security Hardening (11 ngày) - ✅ HOÀN THÀNH
 
 > **Mục tiêu:** Viết các bài kiểm thử tự động, chuẩn bị tài liệu API đầy đủ, thiết lập hệ thống giám sát lỗi sản xuất, và vá các lỗ hổng bảo mật chuyên sâu.
 
@@ -587,5 +589,363 @@ Dưới đây là kế hoạch chi tiết từng bước (Step-by-Step) cho các
 
 ---
 
-> **Lưu ý triển khai:** Kế hoạch Phase 10A đã hoàn thành xuất sắc. Các Phase từ 12 đến 16 sẽ được lần lượt triển khai theo đúng lộ trình đã đề ra để đưa hệ thống lên chuẩn vận hành doanh nghiệp thực tế.
+### 🎨 Phase 17: Premium Theme, i18n & Cloud Storage Abstraction (5 ngày) - ✅ HOÀN THÀNH
+
+> **Mục tiêu:** Cung cấp tính năng đa ngôn ngữ, chuyển đổi giao diện sáng/tối cao cấp và trừu tượng hóa dịch vụ lưu trữ file để sẵn sàng tích hợp với Cloud Storage.
+
+#### 🔧 Backend (Spring Boot)
+1. **Trừu tượng hóa Storage Service:**
+   - Tạo interface `StorageService` với các phương thức: `store(MultipartFile file)`, `load(String filename)`, `delete(String filename)`.
+   - Implement `LocalStorageService` cho môi trường local để phục vụ tệp tĩnh qua thư mục upload hiện có.
+   - Implement `S3StorageService` tích hợp Amazon S3 SDK để lưu trữ file trực tiếp lên đám mây (AWS S3 hoặc các dịch vụ tương thích S3).
+   - Cấu hình chuyển đổi linh hoạt qua `StorageConfig.java` và biến môi trường trong `application.properties`.
+2. **Cải tiến UploadController:**
+   - Refactor lại `UploadController` để gọi qua interface `StorageService` chung thay vì logic lưu file cứng trong code controller.
+
+#### 🎨 Frontend (React)
+1. **Xây dựng Global State cho Theme & i18n:**
+   - Tạo `AppContext.jsx` chứa trạng thái cho Ngôn ngữ (`language`) và Giao diện (`theme`).
+   - Cấu hình lưu trạng thái theme/language vào LocalStorage để giữ tùy chọn của người dùng qua các phiên làm việc.
+2. **Giao diện Chuyển đổi và Tích hợp:**
+   - Thêm dropdown chọn ngôn ngữ (Tiếng Việt / Tiếng Anh) và nút gạt Light/Dark mode trên `Navbar.jsx` bằng các icons sinh động.
+   - Định nghĩa các thuộc tính CSS variables tương thích với thuộc tính `data-theme="dark"` trong `index.css` để giao diện tự động đổi màu mượt mà.
+
+---
+
+## 10. Kế Hoạch Phát Triển Tiếp Theo (Phases 18 - 25)
+
+Dưới đây là kế hoạch chi tiết cho các Phase tiếp theo để nâng cấp các tính năng thương mại điện tử chuyên sâu và tích hợp công nghệ hiện đại.
+
+---
+
+### 🔔 Phase 18: Công Cụ Tiếp Thị (Marketing & Promotion Engine) nâng cao (7 ngày)
+
+> **Mục tiêu:** Tăng tỷ lệ chuyển đổi đơn hàng và tăng trải nghiệm mua sắm thông qua các chiến dịch Flash Sale chủ động, phục hồi giỏ hàng bỏ quên và tiếp thị liên kết.
+
+#### 🔧 Backend (Spring Boot)
+1. **Quản lý Lịch trình Flash Sale tự động:**
+   - Xây dựng Scheduler kiểm tra thời gian bắt đầu/kết thúc các Flash Sale Campaign.
+   - Gửi thông báo đẩy (WebSocket/Email) cho người dùng đăng ký nhận tin trước khi Flash Sale bắt đầu 5 phút.
+2. **Tự động Phục hồi Giỏ hàng (Abandoned Cart Recovery):**
+   - Chạy job định kỳ tìm kiếm các CartItem đã được thêm nhưng không checkout sau 2 giờ.
+   - Gửi email kèm mã giảm giá đặc biệt để khuyến khích người dùng hoàn tất thanh toán.
+3. **Module Tiếp thị Liên kết (Affiliate/Referral System):**
+   - Tạo thực thể `ReferralCode` và API sinh mã giới thiệu cá nhân.
+   - Ghi nhận `referrer_id` khi user mới đăng ký qua link giới thiệu.
+   - Logic cộng điểm Loyalty cho người giới thiệu khi đơn hàng đầu tiên của người được giới thiệu thành công.
+
+#### 🎨 Frontend (React)
+1. **Tương tác Flash Sale & Nhận Tin:**
+   - Thêm nút "Nhắc tôi" tại danh sách sản phẩm sắp Flash Sale.
+2. **Trang Quản lý Affiliate cá nhân:**
+   - Tạo màn hình quản lý/chia sẻ mã giới thiệu, thống kê số lượt đăng ký thành công và hoa hồng/điểm thưởng đã nhận.
+
+---
+
+### 📦 Phase 19: Logictics & Quản Lý Kho Đa Chi Nhánh (Multi-Warehouse & Advanced Logistics) (8 ngày)
+
+> **Mục tiêu:** Hỗ trợ quy trình vận hành phức tạp của các sàn thương mại điện tử nhiều kho bãi, giảm thiểu chi phí vận chuyển và thời gian giao hàng.
+
+#### 🔧 Backend (Spring Boot)
+1. **Thiết kế Cơ sở Dữ liệu Kho Hàng:**
+   - Tạo thực thể `Warehouse` lưu thông tin địa chỉ kho.
+   - Tạo thực thể liên kết `WarehouseInventory` chứa tồn kho thực tế của từng sản phẩm biến thể theo từng kho.
+2. **Thuật toán Chọn Kho Tối ưu:**
+   - Khi đặt hàng, hệ thống tự động chọn kho gần địa chỉ giao hàng của khách hàng nhất có đủ hàng để xử lý đóng gói.
+3. **Hệ thống Cảnh báo Hết Hàng (Stock Alert):**
+   - Gửi email cảnh báo cho Seller/Admin khi tồn kho của một biến thể xuống dưới ngưỡng tối thiểu (`InventoryThreshold`, vị dụ: < 5).
+
+#### 🎨 Frontend (React)
+1. **Theo dõi Hành trình Realtime (Order Tracking Map):**
+   - Tích hợp Map API (Google Maps/Mapbox) vẽ bản đồ hiển thị vị trí đơn hàng/tài xế trong chi tiết đơn hàng.
+2. **Giao diện Quản lý Kho cho Seller:**
+   - Thêm tab "Quản lý kho hàng" trong SellerDashboard để thêm mới kho, cập nhật số lượng tồn kho theo từng địa điểm cụ thể.
+
+---
+
+### 🧠 Phase 20: Tích hợp AI & Big Data nâng cao (10 ngày)
+
+> **Mục tiêu:** Mang lại trải nghiệm cá nhân hóa tối đa và trợ giúp thông minh cho cả người mua và người bán thông qua AI.
+
+#### 🔧 Backend (Spring Boot)
+1. **Tạo mô tả sản phẩm bằng AI (AI Product Copywriter):**
+   - Viết API kết nối với LLM để tạo bài viết mô tả sản phẩm hấp dẫn dựa trên từ khóa, tên sản phẩm và thông số kỹ thuật.
+2. **Tìm kiếm bằng hình ảnh (Visual Search):**
+   - Sử dụng mô hình Machine Learning/Computer Vision để phân tích đặc trưng ảnh và tìm các sản phẩm tương thích nhất từ cơ sở dữ liệu.
+3. **Chatbot Hỗ trợ Khách hàng AI:**
+   - Tích hợp AI Chatbot có thể trả lời các câu hỏi về chính sách đổi trả, thời gian giao hàng, tra cứu mã đơn hàng tự động và chuyển hướng cho nhân viên hỗ trợ khi cần thiết.
+
+#### 🎨 Frontend (React)
+1. **Tích hợp tính năng AI cho Seller & Buyer:**
+   - Nút "Viết bằng AI" trong giao diện đăng sản phẩm của Seller.
+   - Thêm nút tải ảnh lên (hình Camera) cạnh ô Search để tìm kiếm sản phẩm bằng hình ảnh.
+   - Widget Chatbot AI cố định góc dưới bên phải màn hình để người mua có thể chat trực tiếp bất cứ lúc nào.
+
+---
+
+### 🛡️ Phase 21: Bảo Mật Nâng Cao & Hỗ Trợ Đa Doanh Nghiệp (Multi-tenant Marketplace) (9 ngày)
+
+> **Mục tiêu:** Bảo vệ tài khoản người dùng an toàn tối đa và chuyển đổi hệ thống sang kiến trúc Multi-tenant SaaS để cung cấp gian hàng độc lập.
+
+#### 🔧 Backend (Spring Boot)
+1. **Tích hợp xác thực 2 lớp (2FA):**
+   - Hỗ trợ OTP qua SMS hoặc tích hợp Google Authenticator (TOTP) cho Admin và Seller.
+2. **Quyền riêng tư & Tuân thủ Bảo mật:**
+   - Tạo API cho phép người dùng tự xuất dữ liệu cá nhân (JSON/PDF) hoặc gửi yêu cầu xóa tài khoản vĩnh viễn (GDPR compliance).
+3. **Kiến trúc Multi-tenant:**
+   - Tách biệt dữ liệu và cấu hình domain để mỗi gian hàng lớn có thể trỏ tên miền riêng hoặc sử dụng subdomain riêng biệt (ví dụ: `shop1.ecommerce.com`).
+
+#### 🎨 Frontend (React)
+1. **Cấu hình bảo mật tài khoản:**
+   - Giao diện bật/tắt 2FA, quét mã QR kích hoạt Google Authenticator trong trang Profile.
+   - Nút yêu cầu xóa tài khoản và xuất dữ liệu cá nhân.
+
+---
+
+### ⚡ Phase 22: Tối ưu hóa hiệu năng & Caching nâng cao (7 ngày)
+
+> **Mục tiêu:** Cải thiện tốc độ tải trang, tối ưu hóa câu lệnh SQL và phản hồi dữ liệu nhanh dưới 100ms thông qua việc tận dụng tối đa hệ thống Caching.
+
+#### 🔧 Backend (Spring Boot)
+1. **Redis Caching Strategy**:
+   - Cấu hình `@Cacheable` cho các danh mục sản phẩm, danh sách sản phẩm bán chạy và thông tin chi tiết sản phẩm.
+   - Cơ chế tự động xóa/cập nhật cache (Eviction) khi sản phẩm hoặc danh mục bị thay đổi (CRUD).
+2. **Database Indexing**:
+   - Thêm index trên các trường tìm kiếm và lọc thường xuyên như: `sku`, `price`, `created_at`, `status` trong database PostgreSQL.
+3. **Connection Pooling**:
+   - Tối ưu tham số HikariCP trong `application.properties` để tối đa số kết nối đồng thời.
+
+#### 🎨 Frontend (React)
+1. **Lazy Loading & Code Splitting**:
+   - Sử dụng `React.lazy` và `Suspense` cho các Route để giảm dung lượng file bundle tải lần đầu.
+2. **Image Optimization**:
+   - Áp dụng kỹ thuật Lazy loading cho hình ảnh hiển thị trên trang danh sách sản phẩm.
+
+---
+
+### 📊 Phase 23: Phân tích dữ liệu & Báo cáo nâng cao (Advanced Analytics & Reporting) (8 ngày)
+
+> **Mục tiêu:** Cung cấp cho người bán (Seller) và Quản trị viên (Admin) các công cụ báo cáo trực quan, chi tiết về tình hình kinh doanh để đưa ra chiến lược tối ưu.
+
+#### 🔧 Backend (Spring Boot)
+1. **Báo cáo tài chính chi tiết**:
+   - Viết API thống kê doanh thu theo ngày/tuần/tháng/năm, tính toán tỷ lệ lợi nhuận dựa trên giá gốc sản phẩm.
+   - Thống kê tỷ lệ chuyển đổi (Conversion Rate) từ lượt xem sản phẩm sang lượt mua hàng.
+2. **Xuất file báo cáo**:
+   - Viết API xuất dữ liệu đơn hàng và doanh thu ra file Excel (sử dụng Apache POI) hoặc PDF cho kế toán.
+
+#### 🎨 Frontend (React)
+1. **Advanced Charting Dashboard**:
+   - Tích hợp thư viện biểu đồ chuyên nghiệp (như Chart.js hoặc Recharts) để vẽ biểu đồ doanh số dạng đường, biểu đồ tròn phân tích cơ cấu ngành hàng bán chạy.
+2. **Bộ lọc thời gian linh hoạt**:
+   - Cho phép người bán chọn khoảng thời gian custom (ví dụ: 7 ngày qua, 30 ngày qua, hoặc khoảng ngày tự chọn) để xem báo cáo tương ứng.
+
+---
+
+### 🎡 Phase 24: Hệ thống Khách hàng thân thiết & Gamification (9 ngày)
+
+> **Mục tiêu:** Tăng mức độ gắn bó của người dùng (Customer Retention) bằng cách tích hợp các tính năng chơi game nhận quà và nâng hạng thành viên.
+
+#### 🔧 Backend (Spring Boot)
+1. **Lucky Wheel (Vòng quay may mắn)**:
+   - Tạo API cho phép người dùng quay vòng quay hàng ngày bằng cách tiêu hao Xu thành viên (Loyalty Points).
+   - Thiết lập tỷ lệ trúng thưởng Voucher giảm giá hoặc Xu ngẫu nhiên.
+2. **Phân hạng Thành viên (Membership Tiering)**:
+   - Cơ chế tự động phân hạng: Đồng (Bronze), Bạc (Silver), Vàng (Gold), Kim cương (Platinum) dựa trên tổng số tiền đã chi tiêu trong năm.
+   - Logic áp dụng đặc quyền riêng (ví dụ: Vàng được giảm thêm 2% đơn hàng, Kim cương được free ship mọi đơn hàng).
+
+#### 🎨 Frontend (React)
+1. **Trang Vòng Quay May Mắn (Lucky Wheel UI)**:
+   - Giao diện vòng quay Canvas xoay tròn sinh động với âm thanh vui nhộn khi trúng thưởng.
+2. **Hệ thống Nhiệm Vụ Hàng Ngày (Daily Quests)**:
+   - Màn hình hiển thị các nhiệm vụ nhận xu (ví dụ: đăng nhập mỗi ngày, xem sản phẩm 5 phút, chia sẻ liên kết giới thiệu).
+
+---
+
+### 🌐 Phase 25: Trải nghiệm đa quốc gia & Đa tiền tệ (6 ngày)
+
+> **Mục tiêu:** Mở rộng thị trường ứng dụng, giúp hệ thống sẵn sàng cho tệp người dùng quốc tế.
+
+#### 🔧 Backend (Spring Boot)
+1. **Đổi tỷ giá tiền tệ động (Dynamic Exchange Rate)**:
+   - Tích hợp API cập nhật tỷ giá tự động (ví dụ: ExchangeRate-API) để chuyển đổi từ VND sang USD, EUR.
+   - Lưu trữ giá sản phẩm theo gốc VND và tự động quy đổi khi có request từ client quốc tế.
+2. **Cơ chế Đa ngôn ngữ (i18n)**:
+   - Xây dựng database hỗ trợ lưu trữ tên sản phẩm và mô tả bằng nhiều ngôn ngữ khác nhau (ví dụ: bảng `product_translations`).
+
+#### 🎨 Frontend (React)
+1. **Bộ chọn Đơn vị Tiền tệ & Ngôn ngữ toàn cục**:
+   - Thêm dropdown chọn tiền tệ (VND/USD) và đồng bộ hiển thị định dạng tiền tương ứng trên toàn bộ các trang (Giỏ hàng, Checkout, Chi tiết sản phẩm).
+
+---
+
+## 11. Hướng Dẫn Tích Hợp & Cấu Hình PostgreSQL (PostgreSQL Integration Guide)
+
+Để chuyển đổi dự án từ sử dụng **MySQL** sang **PostgreSQL** (hoặc hỗ trợ chạy song song), hãy thực hiện theo các bước chi tiết dưới đây. Hướng dẫn này bao gồm cấu trúc cấu hình dự án, Docker, và các lưu ý kỹ thuật khi mapping kiểu dữ liệu.
+
+### 11.1 Cấu trúc thay đổi chính trong dự án
+
+Khi tích hợp PostgreSQL, các file sau trong dự án sẽ được cập nhật hoặc tham chiếu:
+- **[pom.xml](file:///Users/admin/IdeaProjects/e-commerce/pom.xml)**: Thay đổi dependency database driver (từ MySQL sang PostgreSQL).
+- **[application.properties](file:///Users/admin/IdeaProjects/e-commerce/src/main/resources/application.properties)**: Thay đổi URL kết nối, username, password và Hibernate Dialect.
+- **[docker-compose.yml](file:///Users/admin/IdeaProjects/e-commerce/docker-compose.yml)**: Chuyển đổi service database từ MySQL sang PostgreSQL container.
+
+---
+
+### 11.2 Chi tiết các bước thực hiện
+
+#### 🚀 Bước 1: Cập nhật dependency trong `pom.xml`
+
+Mở file `pom.xml` và tìm đến phần khai báo dependency của MySQL:
+
+```xml
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+Thay thế bằng dependency PostgreSQL JDBC Driver dưới đây:
+
+```xml
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+```
+
+#### ⚙️ Bước 2: Cấu hình `application.properties` cho PostgreSQL
+
+Thay đổi các cấu hình database trong file `src/main/resources/application.properties` để Spring Boot JPA nhận diện và làm việc với PostgreSQL:
+
+```properties
+# ==========================================
+# DATABASE CONFIGURATION (PostgreSQL)
+# ==========================================
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ecommerce_db}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:root}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA & Hibernate Configurations
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Sử dụng PostgreSQL Dialect để tối ưu hóa SQL do Hibernate sinh ra
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+```
+
+#### 🐳 Bước 3: Cấu hình Container trong `docker-compose.yml`
+
+Thay đổi service `db` và cập nhật các biến môi trường của service `backend` trong file `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: ecommerce-db
+    restart: always
+    environment:
+      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ecommerce_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: ChuoidebaoMatSieuCapVipProNhatDinhKhongDuocDeLo123456789
+    depends_on:
+      - db
+
+  frontend:
+    # ... giữ nguyên cấu hình cũ ...
+    build:
+      context: ./ecommerce-frontend
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      REACT_APP_API_URL: http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  pg-data:
+```
+
+---
+
+### 11.3 Những lưu ý quan trọng khi chuyển đổi từ MySQL sang PostgreSQL
+
+1. **Auto-Increment ID (Khóa chính tự tăng)**:
+   - MySQL sử dụng cơ chế `AUTO_INCREMENT`.
+   - PostgreSQL sử dụng `SEQUENCE` hoặc `IDENTITY` (thường map qua `@GeneratedValue(strategy = GenerationType.IDENTITY)`). Hibernate sẽ tự động sinh ra cột dạng `SERIAL` hoặc `BIGSERIAL` trên Postgres khi chạy chế độ `ddl-auto=update`.
+
+2. **Đặt tên bảng và tên cột trùng từ khóa (Keywords)**:
+   - PostgreSQL rất nhạy cảm với các từ khóa đặt trước như `user`, `order`, `group`.
+   - Trong ứng dụng e-commerce, thực thể `User` và `Order` là rất phổ biến. Đảm bảo các Entity class được chú thích rõ ràng bằng `@Table` để tránh xung đột cú pháp SQL trong Postgres:
+     - `@Table(name = "users")` thay vì mặc định `user`.
+     - `@Table(name = "orders")` thay vì mặc định `order`.
+
+3. **Cột kiểu dữ liệu Text/JSON**:
+   - Nếu dự án có sử dụng lưu trữ cấu trúc JSON động (ví dụ: thông tin chi tiết kỹ thuật sản phẩm, lịch sử chat), MySQL sử dụng kiểu dữ liệu `JSON`. PostgreSQL hỗ trợ kiểu dữ liệu cực kỳ mạnh mẽ là `JSONB`.
+
+4. **Phân biệt Chữ hoa - Chữ thường**:
+   - PostgreSQL phân biệt chữ hoa/thường đối với tên bảng/cột nếu chúng được đặt trong dấu ngoặc kép. Khi viết câu lệnh SQL thuần (`@Query(nativeQuery = true)`), khuyến nghị viết tất cả tên bảng và tên cột bằng **chữ thường** hoặc sử dụng chuẩn snake_case.
+
+---
+
+### 11.4 Hướng dẫn chạy và kiểm thử kết nối
+
+1. **Khởi động database bằng Docker Compose**:
+   ```bash
+   docker-compose down
+   docker-compose up -d db
+   ```
+   
+2. **Kiểm tra trạng thái container**:
+   ```bash
+   docker ps
+   ```
+   Bạn sẽ thấy container `ecommerce-db` chạy trên cổng `5432`.
+
+3. **Chạy ứng dụng Spring Boot Backend**:
+   - Chạy trên local IDE (như IntelliJ IDEA): Đảm bảo bạn đã cài đặt PostgreSQL chạy local trên cổng 5432 (hoặc sửa đổi file `application.properties` để trỏ vào đúng host/port đang chạy).
+   - Hoặc build toàn bộ ứng dụng bằng Docker Compose:
+     ```bash
+     docker-compose up -d --build
+     ```
+
+4. **Kiểm tra Log để xác nhận kết nối thành công**:
+   Nếu thấy các dòng logs tương tự dưới đây, Spring Boot đã kết nối thành công và tự khởi tạo bảng trên PostgreSQL:
+   ```text
+   HikariPool-1 - Starting...
+   HikariPool-1 - Start completed.
+   Dialect        : org.hibernate.dialect.PostgreSQLDialect
+   HHH000412: Creating database schema...
+   ```
+
+---
+
+> **Lưu ý triển khai:** Các Phase từ 10A đến 20 đã được đội ngũ phát triển hoàn thành xuất sắc và kiểm thử ổn định. Kế hoạch từ Phase 21 là định hướng phát triển tiếp theo để nâng tầm ứng dụng lên môi trường doanh nghiệp thực tế quy mô lớn.
 

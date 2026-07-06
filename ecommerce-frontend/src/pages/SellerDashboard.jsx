@@ -11,6 +11,7 @@ import sellerService from '../services/sellerService';
 import userService from '../services/userService';
 import categoryService from '../services/categoryService';
 import api from '../services/api';
+import aiService from '../services/aiService';
 import './SellerDashboard.css';
 
 function SellerDashboard() {
@@ -52,6 +53,94 @@ function SellerDashboard() {
     const [responseNote, setResponseNote] = useState('');
 
     const token = localStorage.getItem('jwtToken') || localStorage.getItem('token');
+
+    // Warehouse Management Tab state (Phase 19)
+    const [warehouses, setWarehouses] = useState([]);
+    const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+    const [warehouseInventories, setWarehouseInventories] = useState([]);
+    const [showInventoryModal, setShowInventoryModal] = useState(false);
+    const [selectedVariantForInv, setSelectedVariantForInv] = useState(null);
+    const [invQuantity, setInvQuantity] = useState('');
+    const [invThreshold, setInvThreshold] = useState('5');
+
+    // AI Copywriter handler (Phase 20)
+    const handleAiGenerateDescription = async () => {
+        if (!prodName.trim()) {
+            toast.error("Vui lòng điền tên sản phẩm trước khi viết mô tả bằng AI!");
+            return;
+        }
+        
+        toast.info("Đang gọi AI để viết mô tả...");
+        
+        const selectedCat = categories.find(cat => cat.id.toString() === prodCategoryId.toString());
+        const categoryName = selectedCat ? selectedCat.name : "Sản phẩm";
+        const keywords = prodName.split(' ').filter(w => w.length > 2);
+        
+        const res = await aiService.generateDescription(prodName, categoryName, keywords);
+        if (res && res.success) {
+            setProdDesc(res.data);
+            toast.success("Đã tạo mô tả sản phẩm bằng AI!");
+        } else {
+            toast.error(res?.message || "Lỗi tạo mô tả bằng AI!");
+        }
+    };
+
+    const loadWarehouseInventory = useCallback((warehouseId) => {
+        if (!warehouseId) return;
+        api.get(`/api/warehouses/${warehouseId}/inventory`)
+        .then(res => {
+            if (res.data && res.data.success) {
+                setWarehouseInventories(res.data.data || []);
+            }
+        })
+        .catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === 'warehouses' && selectedWarehouseId) {
+            loadWarehouseInventory(selectedWarehouseId);
+        }
+    }, [activeTab, selectedWarehouseId, loadWarehouseInventory]);
+
+    const handleOpenInventoryModal = (variant) => {
+        setSelectedVariantForInv(variant);
+        const existing = warehouseInventories.find(inv => inv.productVariant.id === variant.id);
+        if (existing) {
+            setInvQuantity(existing.quantity.toString());
+            setInvThreshold(existing.inventoryThreshold.toString());
+        } else {
+            setInvQuantity('0');
+            setInvThreshold('5');
+        }
+        setShowInventoryModal(true);
+    };
+
+    const handleSaveInventory = async (e) => {
+        e.preventDefault();
+        if (!selectedWarehouseId || !selectedVariantForInv) return;
+
+        try {
+            const quantity = parseInt(invQuantity) || 0;
+            const threshold = parseInt(invThreshold) || 5;
+
+            const res = await api.post(`/api/warehouses/${selectedWarehouseId}/inventory`, {
+                variantId: selectedVariantForInv.id,
+                quantity: quantity,
+                threshold: threshold
+            });
+
+            if (res.data && res.data.success) {
+                toast.success("Cập nhật tồn kho thành công!");
+                setShowInventoryModal(false);
+                loadWarehouseInventory(selectedWarehouseId);
+            } else {
+                toast.error(res.data.message || "Không thể cập nhật tồn kho!");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Có lỗi xảy ra khi cập nhật tồn kho!");
+        }
+    };
 
     // Load initial profile & shop (Wrapped in useCallback to prevent missing dependency warnings)
     const loadProfileAndShop = useCallback(() => {
@@ -131,6 +220,25 @@ function SellerDashboard() {
                     }
                 })
                 .catch(err => console.error(err));
+        }
+
+        if (activeTab === 'warehouses') {
+            api.get('/api/warehouses')
+            .then(res => {
+                if (res.data && res.data.success) {
+                    setWarehouses(res.data.data || []);
+                    if (res.data.data && res.data.data.length > 0) {
+                        setSelectedWarehouseId(res.data.data[0].id.toString());
+                    }
+                }
+            })
+            .catch(err => console.error(err));
+
+            sellerService.getProducts()
+            .then(res => {
+                if (res && res.success) setProducts(res.data.content || []);
+            })
+            .catch(err => console.error(err));
         }
     }, [activeTab, shop, token]);
 
@@ -367,6 +475,12 @@ function SellerDashboard() {
                 >
                     <IconPackage size={16} style={{ transform: 'rotate(180deg)' }} /> <span>Hoàn trả</span>
                 </button>
+                <button 
+                    onClick={() => setActiveTab('warehouses')} 
+                    className={`seller-menu-item btn btn-ghost ${activeTab === 'warehouses' ? 'active' : ''}`}
+                >
+                    <IconStore size={16} /> <span>Kho hàng</span>
+                </button>
             </aside>
 
             {/* Tab content area */}
@@ -529,7 +643,17 @@ function SellerDashboard() {
                                                 <input type="text" className="form-input" value={prodName} onChange={(e) => setProdName(e.target.value)} required />
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">Mô tả chi tiết</label>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                                    <label className="form-label" style={{ margin: 0 }}>Mô tả chi tiết</label>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={handleAiGenerateDescription} 
+                                                        className="btn btn-secondary btn-sm"
+                                                        style={{ padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', height: 'auto' }}
+                                                    >
+                                                        ✨ Viết bằng AI
+                                                    </button>
+                                                </div>
                                                 <textarea className="form-textarea" rows="3" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} />
                                             </div>
                                             <div style={{ display: 'flex', gap: '15px' }}>
@@ -703,6 +827,141 @@ function SellerDashboard() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {/* 5. WAREHOUSES TAB (Phase 19) */}
+                {activeTab === 'warehouses' && (
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--color-gray-200)', paddingBottom: 'var(--space-3)' }}>
+                            <h2 className="user-content-title" style={{ margin: 0 }}>Quản Lý Tồn Kho Theo Chi Nhánh</h2>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <label style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--color-gray-700)' }}>Chọn kho hàng:</label>
+                                <select 
+                                    className="form-select" 
+                                    value={selectedWarehouseId} 
+                                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                                    style={{ width: '220px', padding: '6px 12px' }}
+                                >
+                                    {warehouses.length === 0 ? (
+                                        <option value="">Không có kho nào</option>
+                                    ) : (
+                                        warehouses.map(wh => (
+                                            <option key={wh.id} value={wh.id}>{wh.name} ({wh.city})</option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="table-container">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Sản Phẩm</th>
+                                        <th>Biến Thể</th>
+                                        <th>SKU</th>
+                                        <th>Số Lượng Tại Kho</th>
+                                        <th>Ngưỡng Cảnh Báo</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const allVariants = products.flatMap(p => 
+                                            (p.variants || []).map(v => ({ ...v, productName: p.name }))
+                                        );
+
+                                        if (allVariants.length === 0) {
+                                            return (
+                                                <tr>
+                                                    <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: 'var(--color-gray-400)' }}>
+                                                        Sản phẩm của shop chưa được định nghĩa biến thể nào để quản lý kho.
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return allVariants.map(variant => {
+                                            const inv = warehouseInventories.find(i => i.productVariant.id === variant.id);
+                                            const qty = inv ? inv.quantity : 0;
+                                            const thresh = inv ? inv.inventoryThreshold : 5;
+                                            const isLow = qty <= thresh;
+
+                                            return (
+                                                <tr key={variant.id}>
+                                                    <td className="font-semibold">{variant.productName}</td>
+                                                    <td>{variant.name}</td>
+                                                    <td><code>{variant.sku}</code></td>
+                                                    <td style={{ color: isLow ? '#ef4444' : 'inherit', fontWeight: isLow ? 'bold' : 'normal' }}>
+                                                        {qty} {isLow && '⚠️'}
+                                                    </td>
+                                                    <td>{thresh}</td>
+                                                    <td>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => handleOpenInventoryModal(variant)} 
+                                                            className="btn btn-secondary btn-sm"
+                                                            style={{ padding: '4px 10px', height: 'auto', border: '1px solid var(--color-gray-300)' }}
+                                                        >
+                                                            <IconEdit size={12} /> Cập Nhật Tồn Kho
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        });
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* INVENTORY EDIT MODAL */}
+                        {showInventoryModal && selectedVariantForInv && (
+                            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                                <div style={{ background: 'white', padding: '25px', borderRadius: '8px', maxWidth: '400px', width: '90%', boxShadow: 'var(--shadow-lg)' }}>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '15px' }}>
+                                        Cập Nhật Tồn Kho Chi Nhánh
+                                    </h3>
+                                    <form onSubmit={handleSaveInventory}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
+                                            <div style={{ fontSize: '14px', color: '#4b5563' }}>
+                                                <strong>Sản phẩm:</strong> {selectedVariantForInv.productName}<br/>
+                                                <strong>Biến thể:</strong> {selectedVariantForInv.name} (SKU: {selectedVariantForInv.sku})
+                                            </div>
+                                            
+                                            <div className="form-group">
+                                                <label className="form-label">Số lượng thực tế tại kho *</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="form-input" 
+                                                    value={invQuantity} 
+                                                    onChange={(e) => setInvQuantity(e.target.value)} 
+                                                    required 
+                                                    min="0"
+                                                />
+                                            </div>
+                                            
+                                            <div className="form-group">
+                                                <label className="form-label">Ngưỡng cảnh báo hết hàng *</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="form-input" 
+                                                    value={invThreshold} 
+                                                    onChange={(e) => setInvThreshold(e.target.value)} 
+                                                    required 
+                                                    min="1"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                            <button type="button" onClick={() => setShowInventoryModal(false)} className="btn btn-secondary" style={{ padding: '8px 16px', background: '#e5e7eb', color: '#1f2937', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ĐÓNG</button>
+                                            <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>LƯU LẠI</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
