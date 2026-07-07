@@ -1325,4 +1325,4 @@ Khi trình bày đồ án này trước các nhà tuyển dụng hoặc hội đ
     *   "Nhằm tuân thủ GDPR và PCI-DSS, hệ thống mã hóa PII ở tầng Spring Boot bằng AES-256, đồng thời cấu hình Logback Filter để tự động che mờ (masking) các thông tin nhạy cảm trước khi logstash đẩy lên ELK."
 
 ---
-*Tài liệu này được biên soạn bởi Senior Backend Architect, định hướng cấu trúc dự án chuẩn doanh nghiệp, tối ưu hóa khả năng chinh phục hội đồng chuyên môn.*
+
