@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận đơn hàng của bạn</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #ee4d2d; }
+        .header h1 { color: #ee4d2d; margin: 0; }
+        .content { padding: 20px 0; }
+        .order-info { background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .table th, .table td { padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: left; }
+        .table th { background-color: #f2f2f2; }
+        .total { font-size: 18px; font-weight: bold; color: #ee4d2d; text-align: right; margin-top: 15px; }
+        .footer { text-align: center; font-size: 12px; color: #777777; border-top: 1px solid #e0e0e0; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Cảm ơn bạn đã mua hàng!</h1>
+        </div>
+        <div class="content">
+            <p>Xin chào <strong th:text="${username}">User</strong>,</p>
+            <p>Đơn hàng của bạn đã được tiếp nhận thành công và đang được xử lý.</p>
+            
+            <div class="order-info">
+                <h3>Thông tin đơn hàng</h3>
+                <p><strong>Mã đơn hàng:</strong> <span th:text="${orderCode}">ORD-XXXX</span></p>
+                <p><strong>Ngày đặt hàng:</strong> <span th:text="${createdAt}">2026-07-05</span></p>
+                <p><strong>Địa chỉ nhận hàng:</strong> <span th:text="${shippingAddress}">Address</span></p>
+                <p><strong>Phương thức thanh toán:</strong> <span th:text="${paymentMethod}">COD</span></p>
+            </div>
+
+            <h3>Chi tiết sản phẩm</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${items}">
+                        <td>
+                            <span th:text="${item.product.name}">Product Name</span>
+                            <span th:if="${item.variant != null}" th:text="' (' + ${item.variant.name} + ')'" style="font-size: 12px; color: #777777;">(Variant)</span>
+                        </td>
+                        <td th:text="${item.quantity}">1</td>
+                        <td th:text="${#numbers.formatDecimal(item.priceAtPurchase, 0, 'COMMA', 0, 'POINT')} + ' ₫'">10,000 ₫</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="total">
+                Tổng thanh toán: <span th:text="${#numbers.formatDecimal(totalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">10,000 ₫</span>
+            </div>
+
+            <p>Chúng tôi sẽ gửi email thông báo tiếp theo khi đơn hàng được vận chuyển.</p>
+            <p>Trân trọng,<br/>Đội ngũ E-Shop</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 E-Shop. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,285 @@
+package com.ecommerce.ecommerceapi.service;
+
+import com.ecommerce.ecommerceapi.dto.OrderRequest;
+import com.ecommerce.ecommerceapi.entity.*;
+import com.ecommerce.ecommerceapi.event.OrderStatusChangedEvent;
+import com.ecommerce.ecommerceapi.exception.BadRequestException;
+import com.ecommerce.ecommerceapi.exception.ResourceNotFoundException;
+import com.ecommerce.ecommerceapi.repository.OrderItemRepository;
+import com.ecommerce.ecommerceapi.repository.OrderRepository;
+import com.ecommerce.ecommerceapi.repository.ProductRepository;
+import com.ecommerce.ecommerceapi.repository.ProductVariantRepository;
+import com.ecommerce.ecommerceapi.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private ProductVariantRepository productVariantRepository;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private WarehouseService warehouseService;
+
+    @Autowired
+    private LoyaltyService loyaltyService;
+
+    public Order createOrder(Integer userId, OrderRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
+
+        List<CartItem> cartItems = cartService.getCartForUser(userId);
+        if (cartItems.isEmpty()) {
+            throw new BadRequestException("Giỏ hàng của bạn đang trống. Không thể đặt hàng!");
+        }
+
+        // Validate stock for all items
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        Order order = Order.builder()
+                .user(user)
+                .shippingAddress(request.getShippingAddress())
+                .paymentMethod(request.getPaymentMethod())
+                .status(OrderStatus.PENDING)
+                .orderCode(generateOrderCode())
+                .totalPrice(BigDecimal.ZERO) // Temporary, will sum up below
+                .build();
+
+        for (CartItem cartItem : cartItems) {
+            Product product = cartItem.getProduct();
+            ProductVariant variant = cartItem.getVariant();
+            
+            if (variant != null) {
+                // Fetch variant with PESSIMISTIC_WRITE lock
+                ProductVariant lockedVariant = productVariantRepository.findByIdWithLock(variant.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể!"));
+                
+                if (lockedVariant.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Biến thể '" + lockedVariant.getName() + "' của sản phẩm '" + product.getName() + "' không đủ số lượng tồn kho (Còn lại: " + lockedVariant.getStockQuantity() + ")!");
+                }
+                
+                // Deduct variant stock
+                lockedVariant.setStockQuantity(lockedVariant.getStockQuantity() - cartItem.getQuantity());
+                productVariantRepository.save(lockedVariant);
+                
+                variant = lockedVariant;
+            } else {
+                // Fetch product with PESSIMISTIC_WRITE lock
+                Product lockedProduct = productRepository.findByIdWithLock(product.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm!"));
+                
+                if (lockedProduct.getStockQuantity() < cartItem.getQuantity()) {
+                    throw new BadRequestException("Sản phẩm '" + lockedProduct.getName() + "' không đủ số lượng tồn kho (Còn lại: " + lockedProduct.getStockQuantity() + ")!");
+                }
+                
+                // Deduct product stock
+                lockedProduct.setStockQuantity(lockedProduct.getStockQuantity() - cartItem.getQuantity());
+                productRepository.save(lockedProduct);
+                
+                product = lockedProduct;
+            }
+
+            BigDecimal priceAtPurchase = product.getSalePrice() != null && product.getSalePrice().compareTo(BigDecimal.ZERO) > 0
+                    ? product.getSalePrice()
+                    : product.getPrice();
+                    
+            if (variant != null) {
+                BigDecimal vPrice = variant.getPrice() != null ? variant.getPrice() : product.getPrice();
+                BigDecimal vSalePrice = variant.getSalePrice() != null ? variant.getSalePrice() : variant.getPrice();
+                priceAtPurchase = vSalePrice != null && vSalePrice.compareTo(BigDecimal.ZERO) > 0 ? vSalePrice : vPrice;
+            }
+
+            BigDecimal itemTotal = priceAtPurchase.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+            totalPrice = totalPrice.add(itemTotal);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .variant(variant)
+                    .quantity(cartItem.getQuantity())
+                    .priceAtPurchase(priceAtPurchase)
+                    .build();
+
+            orderItems.add(orderItem);
+        }
+
+        // Tính toán tổng tiền cuối cùng bao gồm chiết khấu và giảm giá qua xu thành viên
+        BigDecimal shippingFee = totalPrice.compareTo(BigDecimal.valueOf(500000)) > 0 ? BigDecimal.ZERO : BigDecimal.valueOf(30000);
+        BigDecimal finalTotal = totalPrice.add(shippingFee);
+
+        if (request.getDiscountAmount() != null) {
+            finalTotal = finalTotal.subtract(request.getDiscountAmount());
+        }
+
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+
+        order.setTotalPrice(finalTotal);
+        order.setOrderItems(orderItems);
+
+        // Chọn kho hàng tối ưu và trừ tồn kho chi tiết
+        Warehouse optimalWarehouse = warehouseService.selectOptimalWarehouse(request.getShippingAddress(), orderItems);
+        order.setWarehouse(optimalWarehouse);
+
+        if (optimalWarehouse != null) {
+            for (OrderItem item : orderItems) {
+                if (item.getVariant() != null) {
+                    warehouseService.deductStock(optimalWarehouse, item.getVariant(), item.getQuantity());
+                }
+            }
+        }
+
+        // Save order (will cascade save order items because of CascadeType.ALL)
+        Order savedOrder = orderRepository.save(order);
+
+        // Khấu trừ xu tích lũy nếu được áp dụng
+        if (request.getPointsUsed() != null && request.getPointsUsed() > 0) {
+            try {
+                loyaltyService.deductPoints(userId, request.getPointsUsed(), "Sử dụng xu thành viên cho đơn hàng #" + savedOrder.getOrderCode());
+            } catch (Exception e) {
+                System.err.println("Lỗi trừ điểm tích lũy: " + e.getMessage());
+            }
+        }
+
+        // Clear cart
+        cartService.clearCart(userId);
+
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+
+        return savedOrder;
+    }
+
+    public List<Order> getOrdersForUser(Integer userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    public Order getOrderById(Integer orderId, Integer userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        // Check ownership (admins can see any order)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng!"));
+
+        if (!order.getUser().getId().equals(userId) && user.getRole() != UserRole.ADMIN) {
+            throw new BadRequestException("Bạn không có quyền truy cập đơn hàng này!");
+        }
+
+        return order;
+    }
+
+    public Page<Order> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable);
+    }
+
+    public Order updateOrderStatus(Integer orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new BadRequestException("Không thể chuyển đổi trạng thái cho đơn hàng đã hủy hoặc đã giao thành công!");
+        }
+
+        // Return stock if cancelled
+        if (status == OrderStatus.CANCELLED) {
+            returnStockForOrder(order);
+        }
+
+        order.setStatus(status);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
+    }
+
+    public Order cancelOrder(Integer orderId, Integer userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Bạn không có quyền hủy đơn hàng này!");
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Chỉ có thể hủy đơn hàng ở trạng thái CHỜ XỬ LÝ (PENDING)!");
+        }
+
+        returnStockForOrder(order);
+        order.setStatus(OrderStatus.CANCELLED);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
+    }
+
+    public Order payOrder(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Đơn hàng này không ở trạng thái chờ thanh toán!");
+        }
+        order.setStatus(OrderStatus.SHIPPING);
+        Order savedOrder = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(this, savedOrder));
+        return savedOrder;
+    }
+
+    private void returnStockForOrder(Order order) {
+        if (order.getOrderItems() != null) {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getVariant() != null) {
+                    ProductVariant variant = item.getVariant();
+                    variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
+                    productVariantRepository.save(variant);
+
+                    // Hoàn trả tồn kho tại kho được chọn
+                    if (order.getWarehouse() != null) {
+                        warehouseService.restoreStock(order.getWarehouse(), variant, item.getQuantity());
+                    }
+                } else {
+                    Product product = item.getProduct();
+                    product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                    productRepository.save(product);
+                }
+            }
+        }
+    }
+
+    private String generateOrderCode() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String dateStr = LocalDate.now().format(formatter);
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        return "ORD-" + dateStr + "-" + randomSuffix;
+    }
+}

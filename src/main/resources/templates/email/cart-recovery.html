@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>🛒 Hình như bạn đã quên gì đó trong giỏ hàng? - E-Shop</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 30px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 30px 20px;
+            line-height: 1.6;
+        }
+        .content p {
+            margin: 0 0 15px 0;
+        }
+        .voucher-box {
+            background-color: #f0f7ff;
+            border: 2px dashed #1e3c72;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .voucher-title {
+            font-size: 14px;
+            color: #555555;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .voucher-code {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e3c72;
+            letter-spacing: 2px;
+        }
+        .voucher-desc {
+            font-size: 12px;
+            color: #666666;
+            margin-top: 10px;
+        }
+        .btn-box {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            background-color: #1e3c72;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(30, 60, 114, 0.2);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+            border-top: 1px solid #eeeeee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 Đừng bỏ lỡ các sản phẩm trong giỏ hàng!</h1>
+        </div>
+        <div class="content">
+            <p>Chào <strong><span th:text="${username}">User</span></strong>,</p>
+            <p>Chúng tôi nhận thấy bạn vẫn còn một số sản phẩm tuyệt vời đang chờ đợi trong giỏ hàng tại E-Shop.</p>
+            <p>Để giúp bạn dễ dàng đưa ra quyết định, chúng tôi muốn gửi tặng bạn một mã giảm giá đặc biệt:</p>
+            
+            <div class="voucher-box">
+                <div class="voucher-title">Mã giảm giá của bạn</div>
+                <div class="voucher-code" th:text="${voucherCode}">VOUCHER_CODE</div>
+                <div class="voucher-desc">Giảm giá <span th:text="${voucherDiscount}">10%</span> cho toàn bộ đơn hàng của bạn. Hạn sử dụng: 3 ngày.</div>
+            </div>
+
+            <div class="btn-box">
+                <a th:href="${cartUrl}" class="btn">Quay lại giỏ hàng</a>
+            </div>
+            
+            <p>Nhanh tay lên nhé, các sản phẩm trong giỏ hàng có thể hết hàng bất cứ lúc nào!</p>
+        </div>
+        <div class="footer">
+            <p>Email này được gửi tự động từ hệ thống E-Shop. Vui lòng không phản hồi email này.</p>
+            <p>© 2026 E-Shop Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

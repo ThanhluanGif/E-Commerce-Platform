@@ -1,0 +1,208 @@
+.chat-wrapper {
+  display: flex;
+  height: 550px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Conversation Sidebar List */
+.chat-sidebar {
+  width: 280px;
+  border-right: 1px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-gray-50);
+}
+
+.chat-sidebar-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-mode-toggle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-white);
+  transition: opacity var(--transition-fast);
+}
+.chat-mode-toggle:hover {
+  opacity: 0.9;
+}
+
+.conversations-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.conv-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-gray-100);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  transition: background var(--transition-fast);
+}
+.conv-item:hover {
+  background: var(--color-gray-100);
+}
+.conv-item.active {
+  background: var(--color-primary-light);
+}
+
+.conv-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.conv-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.conv-title-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.conv-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-last-msg {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chat Main View Window */
+.chat-main-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-white);
+}
+
+.chat-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-gray-200);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.chat-header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-gray-100);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-messages-area {
+  flex: 1;
+  padding: var(--space-5);
+  overflow-y: auto;
+  background: var(--color-gray-100);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.msg-bubble-wrap {
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+.msg-bubble-wrap.me {
+  align-self: flex-end;
+}
+.msg-bubble-wrap.other {
+  align-self: flex-start;
+}
+
+.msg-bubble {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  box-shadow: var(--shadow-sm);
+}
+.me .msg-bubble {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-bottom-right-radius: 0;
+}
+.other .msg-bubble {
+  background: var(--color-gray-200);
+  color: var(--color-gray-900);
+  border-bottom-left-radius: 0;
+}
+
+.msg-timestamp {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-400);
+  margin-top: 4px;
+}
+.me .msg-timestamp {
+  align-self: flex-end;
+}
+.other .msg-timestamp {
+  align-self: flex-start;
+}
+
+.chat-input-form {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-gray-200);
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .chat-wrapper {
+    flex-direction: column;
+    height: 700px;
+  }
+  .chat-sidebar {
+    width: 100%;
+    height: 250px;
+    border-right: none;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+  .chat-main-window {
+    flex: 1;
+  }
+}

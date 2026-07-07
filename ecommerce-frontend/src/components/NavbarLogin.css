@@ -1,0 +1,71 @@
+.navbar-login {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    height: 64px;
+    box-sizing: border-box;
+}
+
+/* Chia đều 3 phần bằng nhau */
+.nav-left, .nav-center, .nav-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.nav-left {
+    justify-content: flex-start;
+}
+
+.nav-center {
+    justify-content: center;
+}
+
+.nav-right {
+    justify-content: flex-end;
+}
+
+/* Style cho nút Quay lại */
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4b5563; /* Màu xám vừa phải */
+    font-size: 16px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.back-button:hover {
+    background-color: #f3f4f6; /* Hiệu ứng hover nhẹ */
+    color: #1f2937;
+}
+
+.back-icon {
+    font-size: 18px;
+}
+
+/* Style cho tiêu đề ở giữa */
+.navbar-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+.hover-underline-link {
+    color: #3643ba;
+    text-decoration: none; /* Mặc định ẩn gạch chân */
+}
+
+.hover-underline-link:hover {
+    color: #3643ba;
+    text-decoration: underline; /* Hiện gạch chân khi hover */
+}

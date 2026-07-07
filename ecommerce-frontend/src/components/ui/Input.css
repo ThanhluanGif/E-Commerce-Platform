@@ -1,0 +1,59 @@
+.input-ui-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-ui-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
+.input-ui-required {
+  color: var(--color-danger);
+}
+
+.input-ui-field {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-900);
+  background: var(--color-white);
+  outline: none;
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.input-ui-field:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.input-ui-field:disabled {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+.input-ui-has-error .input-ui-field {
+  border-color: var(--color-danger);
+}
+
+.input-ui-has-error .input-ui-field:focus {
+  box-shadow: 0 0 0 2px var(--color-danger-light);
+}
+
+.input-ui-error-msg {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  margin-top: 2px;
+}

@@ -1,0 +1,35 @@
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f3f4f6 25%,
+    #e5e7eb 50%,
+    #f3f4f6 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite;
+  display: inline-block;
+}
+
+@keyframes skeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  border-radius: var(--border-radius-xs, 2px);
+  margin-bottom: var(--space-2, 8px);
+}
+
+.skeleton-rect {
+  border-radius: var(--border-radius-sm, 4px);
+  width: 100%;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+  flex-shrink: 0;
+}

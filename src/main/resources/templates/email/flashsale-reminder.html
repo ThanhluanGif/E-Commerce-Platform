@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>⚡ Nhắc nhở Flash Sale - E-Shop</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff4e50, #f9d423);
+            padding: 30px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 30px 20px;
+            line-height: 1.6;
+        }
+        .content p {
+            margin: 0 0 15px 0;
+        }
+        .btn-box {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            background-color: #ff4e50;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(255, 78, 80, 0.2);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+            border-top: 1px solid #eeeeee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Đừng Bỏ Lỡ Flash Sale! ⚡</h1>
+        </div>
+        <div class="content">
+            <p>Chào <strong><span th:text="${username}">User</span></strong>,</p>
+            <p>Chương trình Flash Sale <strong><span th:text="${saleName}">Sale Name</span></strong> mà bạn quan tâm sẽ chính thức bắt đầu sau <strong>5 phút nữa</strong> vào lúc <span th:text="${startTime}">startTime</span>!</p>
+            <p>Rất nhiều sản phẩm cực hot với giá giảm kịch sàn đang chờ đón bạn. Hãy chuẩn bị sẵn sàng để săn những ưu đãi tốt nhất.</p>
+            <div class="btn-box">
+                <a th:href="${flashSaleUrl}" class="btn">Săn Deal Ngay</a>
+            </div>
+            <p>Chúc bạn có trải nghiệm mua sắm tuyệt vời tại E-Shop!</p>
+        </div>
+        <div class="footer">
+            <p>Email này được gửi tự động từ hệ thống E-Shop. Vui lòng không phản hồi email này.</p>
+            <p>© 2026 E-Shop Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
