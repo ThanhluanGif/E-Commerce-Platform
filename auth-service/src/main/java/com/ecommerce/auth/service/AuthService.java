@@ -10,8 +10,11 @@ import com.ecommerce.auth.model.UserStatus;
 import com.ecommerce.auth.repository.RoleRepository;
 import com.ecommerce.auth.repository.UserRepository;
 import com.ecommerce.auth.security.JwtTokenProvider;
+import com.ecommerce.auth.service.RedisTokenService;
 import com.ecommerce.common.exception.AppException;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,6 +36,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final RedisTokenService redisTokenService;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpirationInMs;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -69,6 +76,9 @@ public class AuthService {
         String accessToken = tokenProvider.generateAccessToken(savedUser.getId(), savedUser.getUsername(), roles);
         String refreshToken = tokenProvider.generateRefreshToken(savedUser.getUsername());
 
+        // Save refresh token to Redis
+        redisTokenService.saveRefreshToken(savedUser.getId(), refreshToken, refreshExpirationInMs);
+
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -97,6 +107,9 @@ public class AuthService {
             String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getUsername(), roles);
             String refreshToken = tokenProvider.generateRefreshToken(user.getUsername());
 
+            // Save refresh token to Redis
+            redisTokenService.saveRefreshToken(user.getId(), refreshToken, refreshExpirationInMs);
+
             return AuthResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
@@ -118,5 +131,65 @@ public class AuthService {
                 .status(user.getStatus().name())
                 .roles(user.getRoles().stream().map(Role::getName).toList())
                 .build();
+    }
+
+    public AuthResponse refresh(String refreshToken) {
+        if (refreshToken == null || !tokenProvider.validateToken(refreshToken)) {
+            throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+        }
+
+        Claims claims = tokenProvider.getClaimsFromToken(refreshToken);
+        String username = claims.getSubject();
+
+        User user = userRepository.findByUsername(username)
+                .filter(u -> u.getDeletedAt() == null)
+                .orElseThrow(() -> new AppException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Your account has been blocked");
+        }
+
+        String storedToken = redisTokenService.getRefreshToken(user.getId());
+        if (storedToken == null || !storedToken.equals(refreshToken)) {
+            throw new AppException(HttpStatus.UNAUTHORIZED, "Refresh token is expired or revoked");
+        }
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .toList();
+
+        String newAccessToken = tokenProvider.generateAccessToken(user.getId(), user.getUsername(), roles);
+        String newRefreshToken = tokenProvider.generateRefreshToken(user.getUsername());
+
+        redisTokenService.saveRefreshToken(user.getId(), newRefreshToken, refreshExpirationInMs);
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .user(mapToUserResponse(user))
+                .build();
+    }
+
+    public void logout(String accessToken) {
+        if (accessToken == null || !tokenProvider.validateToken(accessToken)) {
+            throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid access token");
+        }
+
+        Claims claims = tokenProvider.getClaimsFromToken(accessToken);
+        Long userId = null;
+        Object idObj = claims.get("id");
+        if (idObj instanceof Number) {
+            userId = ((Number) idObj).longValue();
+        }
+
+        if (userId != null) {
+            redisTokenService.deleteRefreshToken(userId);
+        }
+
+        java.util.Date expiration = claims.getExpiration();
+        long remainingTimeMs = expiration.getTime() - System.currentTimeMillis();
+        if (remainingTimeMs > 0) {
+            redisTokenService.blacklistAccessToken(accessToken, remainingTimeMs);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.ecommerce.auth.security;
 
+import com.ecommerce.auth.service.RedisTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
+    private final RedisTokenService redisTokenService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -32,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt) && !redisTokenService.isAccessTokenBlacklisted(jwt)) {
                 Claims claims = tokenProvider.getClaimsFromToken(jwt);
                 String username = claims.getSubject();
                 
