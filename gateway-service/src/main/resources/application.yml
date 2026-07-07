@@ -4,11 +4,22 @@ server:
 spring:
   application:
     name: gateway-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secure_pass}
   cloud:
     gateway:
       httpclient:
         connect-timeout: 2000
         response-timeout: 5s
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            key-resolver: "#{@userKeyResolver}"
       routes:
         - id: auth-route
           uri: http://localhost:8081
