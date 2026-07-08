@@ -1,6 +1,7 @@
 package com.ecommerce.order.service.impl;
 
 import com.ecommerce.common.exception.AppException;
+import com.ecommerce.order.client.ProductVariantClient;
 import com.ecommerce.order.dto.CartItemResponse;
 import com.ecommerce.order.dto.CheckoutRequest;
 import com.ecommerce.order.dto.OrderResponse;
@@ -8,7 +9,7 @@ import com.ecommerce.order.entity.Order;
 import com.ecommerce.order.entity.OrderItem;
 import com.ecommerce.order.repository.OrderItemRepository;
 import com.ecommerce.order.repository.OrderRepository;
-import com.ecommerce.order.service.CartService;
+import com.ecommerce.order.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,17 +32,31 @@ public class CheckoutTxHelper {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final StringRedisTemplate redisTemplate;
+    private final ProductVariantClient productVariantClient;
+    private final InventoryService inventoryService;
 
     @Transactional
     public OrderResponse createOrderAndClearCart(String userId, List<CartItemResponse> cartItems, CheckoutRequest request) {
         BigDecimal totalAmount = BigDecimal.ZERO;
         
+        // Sort items by variantId to prevent deadlocks on database locks
+        cartItems.sort((a, b) -> a.getVariantId().compareTo(b.getVariantId()));
+
         for (CartItemResponse item : cartItems) {
-            if (item.getVariant() == null) {
+            // 1. Call Product Service to verify status and trigger optimistic lock on variant version
+            com.ecommerce.common.dto.ApiResponse<com.ecommerce.order.dto.ProductVariantResponse> response = 
+                    productVariantClient.verifyAndLock(item.getVariantId());
+            if (response == null || response.getData() == null) {
                 throw new AppException(HttpStatus.BAD_REQUEST, 
-                        "One or more items in the cart are no longer available (id: " + item.getVariantId() + ")");
+                        "Product Variant no longer available (id: " + item.getVariantId() + ")");
             }
-            BigDecimal itemPrice = item.getVariant().getPrice();
+            com.ecommerce.order.dto.ProductVariantResponse variant = response.getData();
+            item.setVariant(variant);
+
+            // 2. Verify stock availability in our warehouses
+            inventoryService.verifyStock(item.getVariantId(), item.getQuantity());
+
+            BigDecimal itemPrice = variant.getPrice();
             BigDecimal itemTotal = itemPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
             totalAmount = totalAmount.add(itemTotal);
         }
@@ -79,7 +94,7 @@ public class CheckoutTxHelper {
 
         orderRepository.save(order);
 
-        // 2. Persist OrderItems
+        // 2. Persist OrderItems & Reserve Stock
         for (CartItemResponse item : cartItems) {
             long orderItemId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
             BigDecimal unitPrice = item.getVariant().getPrice();
@@ -99,9 +114,12 @@ public class CheckoutTxHelper {
                     .build();
 
             orderItemRepository.save(orderItem);
+
+            // 3. Keep stock reservation (reserved_qty) and log RESERVE transaction
+            inventoryService.reserveStock(orderId, item.getVariantId(), item.getQuantity());
         }
 
-        // 3. Clear Redis Cart (HDEL the entries or complete key deletion)
+        // 4. Clear Redis Cart (HDEL the entries or complete key deletion)
         String cartKey = "cart:" + userId;
         redisTemplate.delete(cartKey);
 

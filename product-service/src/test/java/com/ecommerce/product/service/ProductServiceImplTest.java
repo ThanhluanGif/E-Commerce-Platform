@@ -22,6 +22,7 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import com.ecommerce.product.document.ProductDocument;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -266,5 +267,53 @@ class ProductServiceImplTest {
         assertThat(result.getContent().get(0).getName()).isEqualTo("iPhone 15 Pro");
         verify(elasticsearchOperations, times(1)).search(any(NativeQuery.class), eq(ProductDocument.class));
         verify(productRepository, times(1)).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void testVerifyAndLockVariantSuccess() {
+        ProductVariant variant = ProductVariant.builder()
+                .id(101L)
+                .sku("SKU-101")
+                .name("Variant 101")
+                .price(BigDecimal.valueOf(100.00))
+                .status(VariantStatus.ACTIVE)
+                .product(Product.builder().id(2001L).build())
+                .build();
+
+        when(productVariantRepository.findByIdAndDeletedAtIsNullWithOptimisticLock(101L))
+                .thenReturn(Optional.of(variant));
+        when(productVariantRepository.saveAndFlush(any(ProductVariant.class))).thenReturn(variant);
+
+        ProductVariantResponse response = productService.verifyAndLockVariant(101L);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(101L);
+        assertThat(response.getSku()).isEqualTo("SKU-101");
+        verify(productVariantRepository, times(1)).findByIdAndDeletedAtIsNullWithOptimisticLock(101L);
+        verify(productVariantRepository, times(1)).saveAndFlush(any(ProductVariant.class));
+    }
+
+    @Test
+    void testVerifyAndLockVariantInactive() {
+        ProductVariant variant = ProductVariant.builder()
+                .id(102L)
+                .sku("SKU-102")
+                .name("Variant 102")
+                .status(VariantStatus.INACTIVE)
+                .product(Product.builder().id(2001L).build())
+                .build();
+
+        when(productVariantRepository.findByIdAndDeletedAtIsNullWithOptimisticLock(102L))
+                .thenReturn(Optional.of(variant));
+
+        com.ecommerce.common.exception.AppException exception = org.junit.jupiter.api.Assertions.assertThrows(
+                com.ecommerce.common.exception.AppException.class, () -> {
+                    productService.verifyAndLockVariant(102L);
+                });
+
+        assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(exception.getMessage()).contains("status is not ACTIVE");
+        verify(productVariantRepository, times(1)).findByIdAndDeletedAtIsNullWithOptimisticLock(102L);
+        verify(productVariantRepository, never()).saveAndFlush(any(ProductVariant.class));
     }
 }

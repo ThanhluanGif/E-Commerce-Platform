@@ -244,6 +244,19 @@ public class ProductServiceImpl implements ProductService {
         return mapToProductVariantResponse(variant);
     }
 
+    @Override
+    @Transactional
+    public ProductVariantResponse verifyAndLockVariant(Long id) {
+        ProductVariant variant = productVariantRepository.findByIdAndDeletedAtIsNullWithOptimisticLock(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Variant not found with ID: " + id));
+        if (variant.getStatus() != VariantStatus.ACTIVE) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "ProductVariant status is not ACTIVE: " + id);
+        }
+        variant.setUpdatedAt(LocalDateTime.now());
+        productVariantRepository.saveAndFlush(variant);
+        return mapToProductVariantResponse(variant);
+    }
+
     private ProductResponse mapToProductResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())
