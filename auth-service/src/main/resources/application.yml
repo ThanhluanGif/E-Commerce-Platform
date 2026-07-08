@@ -9,6 +9,9 @@ spring:
     username: postgres
     password: your_secure_password
     driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: auth-service-hikari-pool
+      register-mbeans: true
   jpa:
     hibernate:
       ddl-auto: validate
@@ -30,3 +33,16 @@ jwt:
   secret: 9a4f2c8d3b7a1e5f8g0h2i4j6k8l0m2n4o6p8q0r2s4t6u8v0w2x4y6z8A0B2C4D6E8F0G2H4I6J8K0L2M4N6O8P0Q2R4S6T8U0V2W4X6Y8Z0a1b2c3d4e5f6g7h8
   access-expiration: 3600000 # 1 hour
   refresh-expiration: 604800000 # 7 days
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+

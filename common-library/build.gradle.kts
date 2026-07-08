@@ -24,5 +24,9 @@ dependencies {
 
     // RabbitMQ support
     implementation("org.springframework.boot:spring-boot-starter-amqp")
+    
+    // Servlet API and OpenFeign (compile-time only, provided by consumers)
+    compileOnly("jakarta.servlet:jakarta.servlet-api")
+    compileOnly("org.springframework.cloud:spring-cloud-starter-openfeign")
 }
 

@@ -99,6 +99,49 @@ services:
       timeout: 5s
       retries: 5
 
+  logstash:
+    image: logstash:8.11.1
+    container_name: ecommerce-logstash
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    networks:
+      - ecommerce-net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ecommerce-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ecommerce-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ecommerce-grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - ecommerce-net
+    depends_on:
+      - prometheus
+
 networks:
   ecommerce-net:
     name: ecommerce-net
@@ -113,3 +156,6 @@ volumes:
     driver: local
   elasticsearch_data:
     driver: local
+  grafana_data:
+    driver: local
+

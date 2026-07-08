@@ -82,7 +82,8 @@ public class AuthControllerTest {
         assertNotNull(storedRefreshToken);
         assertEquals(refreshCookie.getValue(), storedRefreshToken);
 
-        // 3. Call Refresh Endpoint
+        // 3. Call Refresh Endpoint (Wait 1 second to ensure JWT timestamp differs)
+        Thread.sleep(1000);
         MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/refresh")
                 .cookie(refreshCookie))
                 .andExpect(status().isOk())

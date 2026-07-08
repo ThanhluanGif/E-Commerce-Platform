@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hóa đơn thanh toán</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1f2937;
+            -webkit-font-smoothing: antialiased;
+        }
+        .invoice-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            padding: 32px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .header p {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .content {
+            padding: 32px;
+        }
+        .greeting {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .greeting strong {
+            color: #111827;
+        }
+        .summary-box {
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .summary-row:last-child {
+            margin-bottom: 0;
+            padding-top: 12px;
+            border-top: 1px dashed #e5e7eb;
+            font-weight: 700;
+            font-size: 16px;
+            color: #4f46e5;
+        }
+        .label {
+            color: #6b7280;
+        }
+        .value {
+            color: #111827;
+            text-align: right;
+        }
+        .value-highlight {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 32px;
+        }
+        .item-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background-color: #f3f4f6;
+            color: #4b5563;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .item-table th:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        .item-table th:last-child {
+            text-align: right;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        .item-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: #374151;
+        }
+        .item-table td:last-child {
+            text-align: right;
+            font-weight: 500;
+        }
+        .item-qty {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #f3f4f6;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        .footer a {
+            color: #6366f1;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-paid {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="invoice-card">
+    <div class="header">
+        <h1>CẢM ƠN BẠN ĐÃ MUA SẮM!</h1>
+        <p>Hóa đơn điện tử số #<span th:text="${orderCode}">ORD-12345</span></p>
+    </div>
+    
+    <div class="content">
+        <div class="greeting">
+            Xin chào <strong th:text="${customerName}">Khách Hàng</strong>,<br/>
+            Giao dịch thanh toán cho đơn hàng của bạn đã hoàn tất thành công. Dưới đây là thông tin chi tiết hóa đơn.
+        </div>
+        
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th style="width: 80px; text-align: center;">SL</th>
+                    <th style="width: 120px;">Đơn giá</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${items}">
+                    <td>
+                        <div th:text="${item.productName}">Tên sản phẩm</div>
+                    </td>
+                    <td style="text-align: center;" class="item-qty" th:text="${item.quantity}">1</td>
+                    <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' đ'">100.000 đ</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-box">
+            <div class="summary-row">
+                <span class="label">Mã đơn hàng</span>
+                <span class="value" th:text="${orderCode}">ORD-12345</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Phương thức thanh toán</span>
+                <span class="value" th:text="${paymentMethod}">Thẻ nội địa VNPAY</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Trạng thái thanh toán</span>
+                <span class="value">
+                    <span th:if="${paymentStatus == 'PAID'}" class="badge badge-paid">Đã thanh toán</span>
+                    <span th:if="${paymentStatus != 'PAID'}" class="badge badge-pending" th:text="${paymentStatus}">Chưa thanh toán</span>
+                </span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Tổng cộng</span>
+                <span class="value-highlight" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">100.000 đ</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ <a href="mailto:support@ecommerce.com">support@ecommerce.com</a></p>
+        <p>&copy; 2026 E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+
+</body>
+</html>

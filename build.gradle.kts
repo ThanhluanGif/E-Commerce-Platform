@@ -4,6 +4,15 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6" apply false
 }
 
+tasks.named<JavaCompile>("compileJava") {
+    enabled = false
+}
+
+tasks.named<JavaCompile>("compileTestJava") {
+    enabled = false
+}
+
+
 allprojects {
     group = "com.ecommerce"
     version = "1.0.0-SNAPSHOT"
@@ -38,6 +47,11 @@ subprojects {
         testAnnotationProcessor("org.projectlombok:lombok:1.18.34")
         
         testImplementation("org.springframework.boot:spring-boot-starter-test")
+        
+        // Monitoring and Observability
+        implementation("org.springframework.boot:spring-boot-starter-actuator")
+        implementation("io.micrometer:micrometer-registry-prometheus")
+        implementation("net.logstash.logback:logstash-logback-encoder:7.4")
     }
 
     tasks.withType<Test> {

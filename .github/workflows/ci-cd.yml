@@ -1,0 +1,123 @@
+name: E-Commerce Platform CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Tests
+        run: ./gradlew test --no-daemon
+
+  build-and-push:
+    name: Build & Push Docker Images
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Package Applications (Assemble Executable Jars)
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and Push gateway-service
+      - name: Build and Push Gateway Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gateway-service
+          file: ./gateway-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/gateway-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/gateway-service:${{ github.sha }}
+
+      # Build and Push auth-service
+      - name: Build and Push Auth Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth-service
+          file: ./auth-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${{ github.sha }}
+
+      # Build and Push product-service
+      - name: Build and Push Product Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./product-service
+          file: ./product-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-service:${{ github.sha }}
+
+      # Build and Push order-service
+      - name: Build and Push Order Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./order-service
+          file: ./order-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:${{ github.sha }}
+
+      # Build and Push notification-service
+      - name: Build and Push Notification Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./notification-service
+          file: ./notification-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/notification-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/notification-service:${{ github.sha }}

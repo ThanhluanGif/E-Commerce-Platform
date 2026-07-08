@@ -52,3 +52,16 @@ jwt:
     - /api/v1/payments/vnpay-ipn
     - /api/v1/payments/vnpay-return
     - /actuator/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
