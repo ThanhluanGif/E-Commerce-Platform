@@ -7,6 +7,7 @@ import com.ecommerce.order.dto.OrderResponse;
 import com.ecommerce.order.dto.ProductVariantResponse;
 import com.ecommerce.order.service.impl.CheckoutServiceImpl;
 import com.ecommerce.order.service.impl.CheckoutTxHelper;
+import com.ecommerce.order.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,11 +41,14 @@ public class CheckoutServiceTest {
     @Mock
     private CheckoutTxHelper checkoutTxHelper;
 
+    @Mock
+    private OrderRepository orderRepository;
+
     private CheckoutService checkoutService;
 
     @BeforeEach
     void setUp() {
-        checkoutService = new CheckoutServiceImpl(redissonClient, cartService, checkoutTxHelper);
+        checkoutService = new CheckoutServiceImpl(redissonClient, cartService, checkoutTxHelper, orderRepository);
     }
 
     @Test

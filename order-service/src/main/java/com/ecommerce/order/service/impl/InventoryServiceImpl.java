@@ -40,7 +40,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void reserveStock(Long orderId, Long productVariantId, int quantity) {
-        List<WarehouseStock> stocks = warehouseStockRepository.findByProductVariantId(productVariantId);
+        List<WarehouseStock> stocks = warehouseStockRepository.findByProductVariantIdForUpdate(productVariantId);
         
         // Try to reserve from a single warehouse first
         WarehouseStock selectedStock = null;
@@ -120,7 +120,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         for (InventoryTransaction reserveTx : reserveTransactions) {
             WarehouseStock stock = warehouseStockRepository
-                    .findByWarehouseIdAndProductVariantId(reserveTx.getWarehouse().getId(), reserveTx.getProductVariantId())
+                    .findByWarehouseIdAndProductVariantIdForUpdate(reserveTx.getWarehouse().getId(), reserveTx.getProductVariantId())
                     .orElseThrow(() -> new AppException(HttpStatus.INTERNAL_SERVER_ERROR,
                             "Warehouse stock record not found for variant ID: " + reserveTx.getProductVariantId() 
                             + " and warehouse: " + reserveTx.getWarehouse().getId()));

@@ -1,5 +1,6 @@
 package com.ecommerce.order.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -26,6 +27,7 @@ public class QcRequestDto {
     private boolean qcPassed;
 
     @NotEmpty(message = "At least one inspection item details required")
+    @Valid
     private List<QcItemDto> items;
 
     @Data

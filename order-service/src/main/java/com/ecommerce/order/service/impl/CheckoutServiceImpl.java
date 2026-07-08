@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.time.LocalDateTime;
+import com.ecommerce.order.repository.OrderRepository;
+import com.ecommerce.order.entity.Order;
+import com.ecommerce.order.entity.OrderId;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final RedissonClient redissonClient;
     private final CartService cartService;
     private final CheckoutTxHelper checkoutTxHelper;
+    private final OrderRepository orderRepository;
 
     @Override
     @Retryable(
@@ -67,5 +72,49 @@ public class CheckoutServiceImpl implements CheckoutService {
                 lock.unlock();
             }
         }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public OrderResponse completeOrder(Long orderId, LocalDateTime createdAt, String userId, String rolesHeader) {
+        Order order = orderRepository.findById(new OrderId(orderId, createdAt))
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + orderId));
+
+        // Authorization check: Admin, Staff, or the order Owner
+        boolean isAuthorized = false;
+        if (rolesHeader != null && !rolesHeader.isBlank()) {
+            isAuthorized = java.util.Arrays.stream(rolesHeader.split(","))
+                    .map(String::trim)
+                    .anyMatch(role -> "ROLE_ADMIN".equalsIgnoreCase(role) || "ROLE_STAFF".equalsIgnoreCase(role));
+        }
+        if (!isAuthorized && userId != null && order.getUserId().toString().equals(userId)) {
+            isAuthorized = true;
+        }
+
+        if (!isAuthorized) {
+            throw new AppException(HttpStatus.FORBIDDEN, "Bạn không có quyền hoàn tất đơn hàng này!");
+        }
+
+        if (!"CONFIRMED".equalsIgnoreCase(order.getStatus()) && !"SHIPPING".equalsIgnoreCase(order.getStatus())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Đơn hàng phải ở trạng thái CONFIRMED hoặc SHIPPING mới có thể hoàn tất!");
+        }
+
+        order.setStatus("COMPLETED");
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        log.info("Order ID: {} successfully completed by user: {}", orderId, userId);
+
+        return OrderResponse.builder()
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .totalAmount(order.getTotalAmount())
+                .shippingFee(order.getShippingFee())
+                .discountAmount(order.getDiscountAmount())
+                .finalAmount(order.getFinalAmount())
+                .status(order.getStatus())
+                .paymentStatus(order.getPaymentStatus())
+                .createdAt(order.getCreatedAt())
+                .build();
     }
 }

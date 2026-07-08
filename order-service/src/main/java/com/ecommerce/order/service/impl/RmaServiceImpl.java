@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import com.ecommerce.order.util.IdGenerator;
 
 @Service
 @RequiredArgsConstructor
@@ -63,7 +66,22 @@ public class RmaServiceImpl implements RmaService {
         }
 
         // 5. Generate request ID
-        long returnRequestId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+        long returnRequestId = IdGenerator.nextId();
+
+        // 5.5 Validate duplicate return quantities
+        List<ReturnRequest> existingRequests = returnRequestRepository.findByOrderId(request.getOrderId());
+        List<ReturnRequest> activeRequests = existingRequests.stream()
+                .filter(r -> !"REJECTED".equalsIgnoreCase(r.getStatus()))
+                .collect(Collectors.toList());
+
+        Map<Long, Integer> alreadyReturnedQuantities = new HashMap<>();
+        for (ReturnRequest activeReq : activeRequests) {
+            List<ReturnItem> activeItems = returnItemRepository.findByReturnRequestId(activeReq.getId());
+            for (ReturnItem activeItem : activeItems) {
+                alreadyReturnedQuantities.put(activeItem.getOrderItemId(), 
+                        alreadyReturnedQuantities.getOrDefault(activeItem.getOrderItemId(), 0) + activeItem.getQuantity());
+            }
+        }
 
         BigDecimal totalRefundAmount = BigDecimal.ZERO;
         List<ReturnItem> returnItems = new ArrayList<>();
@@ -73,8 +91,10 @@ public class RmaServiceImpl implements RmaService {
             OrderItem orderItem = orderItemRepository.findById(new OrderItemId(itemDto.getOrderItemId(), request.getOrderCreatedAt()))
                     .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Order item not found with ID: " + itemDto.getOrderItemId()));
 
-            if (itemDto.getQuantity() > orderItem.getQuantity()) {
-                throw new AppException(HttpStatus.BAD_REQUEST, "Return quantity exceeds purchased quantity for item: " + itemDto.getOrderItemId());
+            int alreadyReturned = alreadyReturnedQuantities.getOrDefault(itemDto.getOrderItemId(), 0);
+            if (itemDto.getQuantity() + alreadyReturned > orderItem.getQuantity()) {
+                throw new AppException(HttpStatus.BAD_REQUEST, "Return quantity exceeds purchased quantity for item: " + itemDto.getOrderItemId()
+                        + ". Purchased: " + orderItem.getQuantity() + ", Already returned: " + alreadyReturned);
             }
 
             // Calculate refund price for the item (unit price after proportional item discount)

@@ -35,7 +35,7 @@ public class OrderCancelledCouponListener {
             return;
         }
 
-        couponRepository.findById(event.getCouponId()).ifPresentOrElse(
+        couponRepository.findByIdForUpdate(event.getCouponId()).ifPresentOrElse(
                 coupon -> {
                     int oldUsedCount = coupon.getUsedCount() != null ? coupon.getUsedCount() : 0;
                     int newUsedCount = Math.max(0, oldUsedCount - 1);

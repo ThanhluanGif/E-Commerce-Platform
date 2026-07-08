@@ -23,6 +23,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import com.ecommerce.order.util.IdGenerator;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +69,7 @@ public class CheckoutTxHelper {
         BigDecimal finalAmount = totalAmount.add(shippingFee).subtract(discountAmount);
 
         // Generate partition-safe composite Order ID and Code
-        long orderId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+        long orderId = IdGenerator.nextId();
         String orderCode = "ORD-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + 
                 String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
@@ -96,7 +99,7 @@ public class CheckoutTxHelper {
 
         // 2. Persist OrderItems & Reserve Stock
         for (CartItemResponse item : cartItems) {
-            long orderItemId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            long orderItemId = IdGenerator.nextId();
             BigDecimal unitPrice = item.getVariant().getPrice();
             BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
 
@@ -119,9 +122,20 @@ public class CheckoutTxHelper {
             inventoryService.reserveStock(orderId, item.getVariantId(), item.getQuantity());
         }
 
-        // 4. Clear Redis Cart (HDEL the entries or complete key deletion)
+        // 4. Clear Redis Cart after successful transaction commit
         String cartKey = "cart:" + userId;
-        redisTemplate.delete(cartKey);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    redisTemplate.delete(cartKey);
+                    log.info("Redis cart cleared after transaction commit for user: {}", userId);
+                }
+            });
+        } else {
+            redisTemplate.delete(cartKey);
+            log.info("Transaction synchronization inactive. Redis cart cleared immediately for user: {}", userId);
+        }
 
         log.info("Transaction successfully committed. Created order code: {}, cleared cart: {}", orderCode, cartKey);
 

@@ -5,6 +5,7 @@ import com.ecommerce.order.dto.CheckoutRequest;
 import com.ecommerce.order.dto.OrderResponse;
 import com.ecommerce.order.service.impl.CheckoutServiceImpl;
 import com.ecommerce.order.service.impl.CheckoutTxHelper;
+import com.ecommerce.order.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,8 +47,13 @@ public class CheckoutRetryTest {
         }
 
         @Bean
-        public CheckoutService checkoutService(RedissonClient redissonClient, CartService cartService, CheckoutTxHelper checkoutTxHelper) {
-            return new CheckoutServiceImpl(redissonClient, cartService, checkoutTxHelper);
+        public OrderRepository orderRepository() {
+            return mock(OrderRepository.class);
+        }
+
+        @Bean
+        public CheckoutService checkoutService(RedissonClient redissonClient, CartService cartService, CheckoutTxHelper checkoutTxHelper, OrderRepository orderRepository) {
+            return new CheckoutServiceImpl(redissonClient, cartService, checkoutTxHelper, orderRepository);
         }
     }
 

@@ -68,7 +68,7 @@ public class InventoryServiceImplTest {
                 .physicalQty(10)
                 .reservedQty(2)
                 .build();
-        when(warehouseStockRepository.findByProductVariantId(1L))
+        when(warehouseStockRepository.findByProductVariantIdForUpdate(1L))
                 .thenReturn(Collections.singletonList(stock));
 
         inventoryService.reserveStock(100L, 1L, 5);
@@ -100,7 +100,7 @@ public class InventoryServiceImplTest {
                 .reservedQty(5) // 5 available
                 .build();
 
-        when(warehouseStockRepository.findByProductVariantId(1L))
+        when(warehouseStockRepository.findByProductVariantIdForUpdate(1L))
                 .thenReturn(Arrays.asList(stock1, stock2));
 
         inventoryService.reserveStock(100L, 1L, 6);

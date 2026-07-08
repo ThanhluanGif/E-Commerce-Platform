@@ -1,5 +1,6 @@
 package com.ecommerce.order.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -21,6 +22,7 @@ public class ReturnRequestDto {
     private String reason;
 
     @NotEmpty(message = "At least one item must be returned")
+    @Valid
     private List<ReturnItemDto> items;
 
     @Data

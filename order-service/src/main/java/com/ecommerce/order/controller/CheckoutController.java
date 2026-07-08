@@ -28,4 +28,17 @@ public class CheckoutController {
         OrderResponse response = checkoutService.checkout(userId, request);
         return ResponseEntity.ok(ApiResponse.success("Order placed successfully", response));
     }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<ApiResponse<OrderResponse>> completeOrder(
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @PathVariable Long id,
+            @RequestParam("createdAt") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAt) {
+        
+        log.info("Received complete order request for ID: {}, user: {}, roles: {}", id, userId, rolesHeader);
+        
+        OrderResponse response = checkoutService.completeOrder(id, createdAt, userId, rolesHeader);
+        return ResponseEntity.ok(ApiResponse.success("Đơn hàng đã được hoàn tất thành công!", response));
+    }
 }

@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import com.ecommerce.order.util.IdGenerator;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +57,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 1. Create unique transaction record in system
-        long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+        long txId = IdGenerator.nextId();
         String transactionCode = "TXN-" + order.getOrderCode() + "-" + System.currentTimeMillis();
 
         PaymentTransaction transaction = PaymentTransaction.builder()
@@ -177,7 +178,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElse(null);
 
         if (transaction == null) {
-            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            long txId = IdGenerator.nextId();
             transaction = PaymentTransaction.builder()
                     .id(txId)
                     .orderId(order.getId())
@@ -299,7 +300,7 @@ public class PaymentServiceImpl implements PaymentService {
                     new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
             
             // Create a new REFUND transaction in the database
-            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            long txId = IdGenerator.nextId();
             PaymentTransaction refundTx = PaymentTransaction.builder()
                     .id(txId)
                     .orderId(orderId)
@@ -323,7 +324,7 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Simulating Stripe Refund API Call...");
             log.info("Stripe Charge ID: {}, Amount: {}", successTx != null ? successTx.getTransactionCode() : "ch_stripe_mock", amount);
             
-            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            long txId = IdGenerator.nextId();
             PaymentTransaction refundTx = PaymentTransaction.builder()
                     .id(txId)
                     .orderId(orderId)
@@ -344,7 +345,7 @@ public class PaymentServiceImpl implements PaymentService {
         } else {
             // For COD or manual, we also accept it and log
             log.info("Payment method is COD/Other. Registering manual refund registration.");
-            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            long txId = IdGenerator.nextId();
             PaymentTransaction refundTx = PaymentTransaction.builder()
                     .id(txId)
                     .orderId(orderId)
