@@ -20,3 +20,12 @@ spring:
     default-schema: orders
     schemas: orders,inventory,public
     create-schemas: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secure_pass}
+
+app:
+  product-service:
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
