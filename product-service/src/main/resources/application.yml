@@ -32,3 +32,14 @@ spring:
       password: ${REDIS_PASSWORD:redis_secure_pass}
   elasticsearch:
     uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+app:
+  order-service:
+    url: ${ORDER_SERVICE_URL:http://localhost:8083}
+
+

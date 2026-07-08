@@ -271,4 +271,97 @@ public class PaymentServiceImpl implements PaymentService {
             return "";
         }
     }
+
+    @Override
+    @Transactional
+    public boolean refundPayment(Long orderId, BigDecimal amount) {
+        log.info("Initiating refund for Order ID: {} with amount: {}", orderId, amount);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng!"));
+
+        List<PaymentTransaction> transactions = transactionRepository.findByOrderId(orderId);
+        PaymentTransaction successTx = transactions.stream()
+                .filter(t -> "SUCCESS".equalsIgnoreCase(t.getStatus()))
+                .findFirst()
+                .orElse(null);
+
+        String gateway = successTx != null ? successTx.getPaymentGateway() : "COD";
+        log.info("Found transaction gateway: {}. Order Payment Method: {}", gateway, order.getPaymentMethod());
+
+        if ("VNPAY".equalsIgnoreCase(gateway) || "VNPAY".equalsIgnoreCase(order.getPaymentMethod())) {
+            log.info("Simulating VNPay Refund API Call...");
+            log.info("VNPay Refund Payload: [vnp_RequestId={}, vnp_Version=2.1.0, vnp_Command=refund, vnp_TmnCode={}, vnp_TransactionType=02, vnp_TxnRef={}, vnp_Amount={}, vnp_CreateBy=Admin, vnp_CreateDate={}]",
+                    UUID.randomUUID().toString(),
+                    tmnCode,
+                    order.getOrderCode(),
+                    amount.multiply(BigDecimal.valueOf(100)).longValue(),
+                    new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+            
+            // Create a new REFUND transaction in the database
+            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            PaymentTransaction refundTx = PaymentTransaction.builder()
+                    .id(txId)
+                    .orderId(orderId)
+                    .orderCreatedAt(order.getCreatedAt())
+                    .transactionCode("REF-" + order.getOrderCode() + "-" + System.currentTimeMillis())
+                    .paymentGateway("VNPAY")
+                    .amount(amount)
+                    .status("REFUNDED")
+                    .createdAt(LocalDateTime.now())
+                    .rawResponse("SUCCESS_MOCK_REFUND")
+                    .build();
+            transactionRepository.save(refundTx);
+
+            // Update order payment status to REFUNDED
+            order.setPaymentStatus("REFUNDED");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+            log.info("VNPay refund mock API returned status 00. Refund successful.");
+            return true;
+        } else if ("STRIPE".equalsIgnoreCase(gateway) || "STRIPE".equalsIgnoreCase(order.getPaymentMethod())) {
+            log.info("Simulating Stripe Refund API Call...");
+            log.info("Stripe Charge ID: {}, Amount: {}", successTx != null ? successTx.getTransactionCode() : "ch_stripe_mock", amount);
+            
+            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            PaymentTransaction refundTx = PaymentTransaction.builder()
+                    .id(txId)
+                    .orderId(orderId)
+                    .orderCreatedAt(order.getCreatedAt())
+                    .transactionCode("REF-" + order.getOrderCode() + "-" + System.currentTimeMillis())
+                    .paymentGateway("STRIPE")
+                    .amount(amount)
+                    .status("REFUNDED")
+                    .createdAt(LocalDateTime.now())
+                    .rawResponse("SUCCESS_MOCK_STRIPE_REFUND")
+                    .build();
+            transactionRepository.save(refundTx);
+
+            order.setPaymentStatus("REFUNDED");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+            return true;
+        } else {
+            // For COD or manual, we also accept it and log
+            log.info("Payment method is COD/Other. Registering manual refund registration.");
+            long txId = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
+            PaymentTransaction refundTx = PaymentTransaction.builder()
+                    .id(txId)
+                    .orderId(orderId)
+                    .orderCreatedAt(order.getCreatedAt())
+                    .transactionCode("REF-MANUAL-" + order.getOrderCode() + "-" + System.currentTimeMillis())
+                    .paymentGateway("MANUAL")
+                    .amount(amount)
+                    .status("REFUNDED")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            transactionRepository.save(refundTx);
+
+            order.setPaymentStatus("REFUNDED");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+            return true;
+        }
+    }
 }
+

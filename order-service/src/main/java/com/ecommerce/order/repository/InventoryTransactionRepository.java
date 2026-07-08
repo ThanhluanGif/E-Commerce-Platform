@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface InventoryTransactionRepository extends JpaRepository<InventoryTransaction, Long> {
     List<InventoryTransaction> findByProductVariantId(Long productVariantId);
+    List<InventoryTransaction> findByTypeAndReferenceTypeAndReferenceId(String type, String referenceType, Long referenceId);
 }
+

@@ -105,4 +105,48 @@ public class InventoryServiceImpl implements InventoryService {
                     "Insufficient stock for variant ID: " + productVariantId + " during reservation. Remaining to reserve: " + remainingToReserve);
         }
     }
+
+    @Override
+    @Transactional
+    public void releaseStock(Long orderId) {
+        log.info("Releasing stock reservations for Order ID: {}", orderId);
+        List<InventoryTransaction> reserveTransactions = inventoryTransactionRepository
+                .findByTypeAndReferenceTypeAndReferenceId("RESERVE", "ORDER", orderId);
+
+        if (reserveTransactions.isEmpty()) {
+            log.warn("No stock reservations found for Order ID: {}. Nothing to release.", orderId);
+            return;
+        }
+
+        for (InventoryTransaction reserveTx : reserveTransactions) {
+            WarehouseStock stock = warehouseStockRepository
+                    .findByWarehouseIdAndProductVariantId(reserveTx.getWarehouse().getId(), reserveTx.getProductVariantId())
+                    .orElseThrow(() -> new AppException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "Warehouse stock record not found for variant ID: " + reserveTx.getProductVariantId() 
+                            + " and warehouse: " + reserveTx.getWarehouse().getId()));
+
+            int oldReserved = stock.getReservedQty();
+            int releasedQty = reserveTx.getQuantity();
+            int newReserved = Math.max(0, oldReserved - releasedQty);
+            
+            stock.setReservedQty(newReserved);
+            stock.setUpdatedAt(LocalDateTime.now());
+            warehouseStockRepository.save(stock);
+
+            InventoryTransaction releaseTx = InventoryTransaction.builder()
+                    .warehouse(reserveTx.getWarehouse())
+                    .productVariantId(reserveTx.getProductVariantId())
+                    .type("RELEASE")
+                    .quantity(releasedQty)
+                    .referenceType("ORDER")
+                    .referenceId(orderId)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            inventoryTransactionRepository.save(releaseTx);
+
+            log.info("Released {} units of variant {} from warehouse {}. reserved_qty: {} -> {}", 
+                    releasedQty, reserveTx.getProductVariantId(), reserveTx.getWarehouse().getId(), oldReserved, newReserved);
+        }
+    }
 }
+
