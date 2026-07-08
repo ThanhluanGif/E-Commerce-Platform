@@ -5,6 +5,7 @@ import com.ecommerce.product.entity.Category;
 import com.ecommerce.product.repository.CategoryRepository;
 import com.ecommerce.product.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
     @Override
+    @Cacheable(value = "categories", key = "'tree'")
     public List<CategoryResponse> getCategoryTree() {
         List<Category> allActiveCategories = categoryRepository.findAllByIsActiveTrueOrderBySortOrderAsc();
 

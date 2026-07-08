@@ -150,8 +150,15 @@ public class AuthService {
         }
 
         String storedToken = redisTokenService.getRefreshToken(user.getId());
+        boolean isGrace = false;
+
         if (storedToken == null || !storedToken.equals(refreshToken)) {
-            throw new AppException(HttpStatus.UNAUTHORIZED, "Refresh token is expired or revoked");
+            String graceToken = redisTokenService.getGraceRefreshToken(user.getId());
+            if (graceToken != null && graceToken.equals(refreshToken)) {
+                isGrace = true;
+            } else {
+                throw new AppException(HttpStatus.UNAUTHORIZED, "Refresh token is expired or revoked");
+            }
         }
 
         List<String> roles = user.getRoles().stream()
@@ -159,9 +166,17 @@ public class AuthService {
                 .toList();
 
         String newAccessToken = tokenProvider.generateAccessToken(user.getId(), user.getUsername(), roles);
-        String newRefreshToken = tokenProvider.generateRefreshToken(user.getUsername());
+        String newRefreshToken;
 
-        redisTokenService.saveRefreshToken(user.getId(), newRefreshToken, refreshExpirationInMs);
+        if (isGrace) {
+            newRefreshToken = storedToken != null ? storedToken : tokenProvider.generateRefreshToken(user.getUsername());
+            if (storedToken == null) {
+                redisTokenService.saveRefreshToken(user.getId(), newRefreshToken, refreshExpirationInMs);
+            }
+        } else {
+            newRefreshToken = tokenProvider.generateRefreshToken(user.getUsername());
+            redisTokenService.saveRefreshTokenWithGracePeriod(user.getId(), newRefreshToken, refreshToken, refreshExpirationInMs);
+        }
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
@@ -171,11 +186,19 @@ public class AuthService {
     }
 
     public void logout(String accessToken) {
-        if (accessToken == null || !tokenProvider.validateToken(accessToken)) {
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Access token is empty");
+        }
+
+        Claims claims;
+        try {
+            claims = tokenProvider.getClaimsFromToken(accessToken);
+        } catch (io.jsonwebtoken.ExpiredJwtException ex) {
+            claims = ex.getClaims();
+        } catch (Exception ex) {
             throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid access token");
         }
 
-        Claims claims = tokenProvider.getClaimsFromToken(accessToken);
         Long userId = null;
         Object idObj = claims.get("id");
         if (idObj instanceof Number) {
@@ -187,9 +210,11 @@ public class AuthService {
         }
 
         java.util.Date expiration = claims.getExpiration();
-        long remainingTimeMs = expiration.getTime() - System.currentTimeMillis();
-        if (remainingTimeMs > 0) {
-            redisTokenService.blacklistAccessToken(accessToken, remainingTimeMs);
+        if (expiration != null) {
+            long remainingTimeMs = expiration.getTime() - System.currentTimeMillis();
+            if (remainingTimeMs > 0) {
+                redisTokenService.blacklistAccessToken(accessToken, remainingTimeMs);
+            }
         }
     }
 }

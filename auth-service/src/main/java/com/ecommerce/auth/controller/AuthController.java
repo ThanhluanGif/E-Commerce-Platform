@@ -67,8 +67,16 @@ public class AuthController {
             token = authHeader.substring(7);
         }
         
-        authService.logout(token);
-        setRefreshTokenCookie(response, "", 0);
+        try {
+            if (token != null) {
+                authService.logout(token);
+            }
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(AuthController.class)
+                    .warn("Failed to blacklist access token during logout: {}", e.getMessage());
+        } finally {
+            setRefreshTokenCookie(response, "", 0);
+        }
         return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
     }
 

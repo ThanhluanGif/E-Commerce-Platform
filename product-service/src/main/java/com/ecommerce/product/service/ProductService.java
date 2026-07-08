@@ -11,4 +11,11 @@ public interface ProductService {
     ProductResponse updateProduct(Long id, ProductUpdateRequest request);
     void deleteProduct(Long id);
     ProductVariantResponse getVariantById(Long id);
+    org.springframework.data.domain.Page<ProductResponse> searchProducts(
+            String keyword,
+            Long categoryId,
+            java.math.BigDecimal minPrice,
+            java.math.BigDecimal maxPrice,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

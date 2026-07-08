@@ -27,10 +27,14 @@ public class UserKeyResolver implements KeyResolver {
             return Mono.just("token:" + token);
         }
 
-        // 3. Fallback to client IP
-        String ip = "unknown";
-        if (request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null) {
+        // 3. Fallback to client IP (checking X-Forwarded-For for reverse proxies)
+        String ip = request.getHeaders().getFirst("X-Forwarded-For");
+        if (ip != null && !ip.isBlank()) {
+            ip = ip.split(",")[0].trim();
+        } else if (request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null) {
             ip = request.getRemoteAddress().getAddress().getHostAddress();
+        } else {
+            ip = "unknown";
         }
         return Mono.just("ip:" + ip);
     }

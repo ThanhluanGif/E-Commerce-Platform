@@ -14,13 +14,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.data.jpa.domain.Specification;
+import com.ecommerce.product.document.ProductDocument;
+import com.ecommerce.product.mapper.ProductDocumentMapper;
+import com.ecommerce.product.repository.es.ElasticsearchQueryBuilder;
+import com.ecommerce.product.repository.spec.ProductSpecifications;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
@@ -29,6 +41,7 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandRepository;
     private final AttributeRepository attributeRepository;
     private final AttributeValueRepository attributeValueRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
 
     @Override
     @Transactional
@@ -67,24 +80,38 @@ public class ProductServiceImpl implements ProductService {
 
             List<AttributeValue> attrValues = new ArrayList<>();
             for (AttributeMappingRequest attrReq : vReq.getAttributes()) {
-                // Find or create Attribute
-                Attribute attribute = attributeRepository.findByName(attrReq.getName())
-                        .orElseGet(() -> attributeRepository.save(
-                                Attribute.builder()
-                                        .name(attrReq.getName())
-                                        .isFilterable(true)
-                                        .build()
-                        ));
+                // Find or create Attribute with concurrent safety
+                Attribute attribute;
+                try {
+                    attribute = attributeRepository.findByName(attrReq.getName())
+                            .orElseGet(() -> attributeRepository.saveAndFlush(
+                                    Attribute.builder()
+                                            .name(attrReq.getName())
+                                            .isFilterable(true)
+                                            .build()
+                            ));
+                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                    attribute = attributeRepository.findByName(attrReq.getName())
+                            .orElseThrow(() -> new IllegalStateException("Failed to find or create attribute: " + attrReq.getName()));
+                }
 
-                // Find or create AttributeValue
-                AttributeValue attributeValue = attributeValueRepository
-                        .findByAttributeNameAndValue(attrReq.getName(), attrReq.getValue())
-                        .orElseGet(() -> attributeValueRepository.save(
-                                AttributeValue.builder()
-                                        .attribute(attribute)
-                                        .value(attrReq.getValue())
-                                        .build()
-                        ));
+                // Find or create AttributeValue with concurrent safety
+                final Attribute finalAttr = attribute;
+                AttributeValue attributeValue;
+                try {
+                    attributeValue = attributeValueRepository
+                            .findByAttributeNameAndValue(attrReq.getName(), attrReq.getValue())
+                            .orElseGet(() -> attributeValueRepository.saveAndFlush(
+                                    AttributeValue.builder()
+                                            .attribute(finalAttr)
+                                            .value(attrReq.getValue())
+                                            .build()
+                            ));
+                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                    attributeValue = attributeValueRepository
+                            .findByAttributeNameAndValue(attrReq.getName(), attrReq.getValue())
+                            .orElseThrow(() -> new IllegalStateException("Failed to find or create attribute value: " + attrReq.getValue()));
+                }
 
                 attrValues.add(attributeValue);
             }
@@ -107,9 +134,12 @@ public class ProductServiceImpl implements ProductService {
             variants.add(productVariantRepository.save(variant));
         }
 
-        product.setVariants(variants);
+        product.getVariants().clear();
+        product.getVariants().addAll(variants);
 
-        return mapToProductResponse(product);
+        ProductResponse response = mapToProductResponse(product);
+        syncToElasticsearch(product);
+        return response;
     }
 
     @Override
@@ -182,7 +212,9 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Product saved = productRepository.save(product);
-        return mapToProductResponse(saved);
+        ProductResponse response = mapToProductResponse(saved);
+        syncToElasticsearch(saved);
+        return response;
     }
 
     @Override
@@ -201,6 +233,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         productRepository.save(product);
+        removeFromElasticsearch(id);
     }
 
     @Override
@@ -260,6 +293,159 @@ public class ProductServiceImpl implements ProductService {
                                 .attributeName(av.getAttribute().getName())
                                 .valueId(av.getId())
                                 .value(av.getValue())
+                                .build())
+                        .toList())
+                .build();
+    }
+
+    private List<Long> getDescendantCategoryIds(Long parentId) {
+        List<Category> allCategories = categoryRepository.findAllByIsActiveTrueOrderBySortOrderAsc();
+        List<Long> result = new ArrayList<>();
+        result.add(parentId);
+
+        java.util.Map<Long, List<Long>> parentToChildren = allCategories.stream()
+                .filter(c -> c.getParent() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        c -> c.getParent().getId(),
+                        java.util.stream.Collectors.mapping(Category::getId, java.util.stream.Collectors.toList())
+                ));
+
+        collectDescendantIds(parentId, parentToChildren, result);
+        return result;
+    }
+
+    private void collectDescendantIds(Long parentId, java.util.Map<Long, List<Long>> parentToChildren, List<Long> result) {
+        List<Long> children = parentToChildren.get(parentId);
+        if (children != null) {
+            for (Long childId : children) {
+                result.add(childId);
+                collectDescendantIds(childId, parentToChildren, result);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchProducts(String keyword, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            categoryIds = getDescendantCategoryIds(categoryId);
+        }
+
+        try {
+            log.info("Searching products via Elasticsearch: keyword={}, categoryIds={}, minPrice={}, maxPrice={}", keyword, categoryIds, minPrice, maxPrice);
+            NativeQuery query = ElasticsearchQueryBuilder.buildSearchQuery(keyword, categoryIds, minPrice, maxPrice, pageable);
+            
+            SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(query, ProductDocument.class);
+            
+            List<ProductResponse> content = searchHits.getSearchHits().stream()
+                    .map(hit -> mapToProductResponse(hit.getContent()))
+                    .toList();
+            
+            return PageableExecutionUtils.getPage(content, pageable, searchHits::getTotalHits);
+        } catch (Exception e) {
+            log.warn("Elasticsearch search failed, falling back to database spec query: {}", e.getMessage(), e);
+            return searchProductsFallback(keyword, categoryIds, minPrice, maxPrice, pageable);
+        }
+    }
+
+    private Page<ProductResponse> searchProductsFallback(String keyword, List<Long> categoryIds, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        Specification<Product> spec = ProductSpecifications.searchProducts(keyword, categoryIds, minPrice, maxPrice);
+        return productRepository.findAll(spec, pageable)
+                .map(this::mapToProductResponse);
+    }
+
+    private void syncToElasticsearch(Product product) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            performSyncToElasticsearch(product);
+                        }
+                    }
+            );
+        } else {
+            performSyncToElasticsearch(product);
+        }
+    }
+
+    private void performSyncToElasticsearch(Product product) {
+        try {
+            if (product.getDeletedAt() != null || product.getStatus() != ProductStatus.ACTIVE) {
+                performRemoveFromElasticsearch(product.getId());
+                return;
+            }
+            ProductDocument doc = ProductDocumentMapper.toDocument(product);
+            elasticsearchOperations.save(doc);
+            log.info("Successfully synced product ID {} to Elasticsearch", product.getId());
+        } catch (Exception e) {
+            log.error("Failed to sync product ID {} to Elasticsearch: {}", product.getId(), e.getMessage());
+        }
+    }
+
+    private void removeFromElasticsearch(Long productId) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            performRemoveFromElasticsearch(productId);
+                        }
+                    }
+            );
+        } else {
+            performRemoveFromElasticsearch(productId);
+        }
+    }
+
+    private void performRemoveFromElasticsearch(Long productId) {
+        try {
+            elasticsearchOperations.delete(String.valueOf(productId), ProductDocument.class);
+            log.info("Successfully removed product ID {} from Elasticsearch", productId);
+        } catch (Exception e) {
+            log.error("Failed to remove product ID {} from Elasticsearch: {}", productId, e.getMessage());
+        }
+    }
+
+    private ProductResponse mapToProductResponse(ProductDocument doc) {
+        return ProductResponse.builder()
+                .id(doc.getId() != null ? Long.valueOf(doc.getId()) : null)
+                .categoryId(doc.getCategoryId())
+                .categoryName(doc.getCategoryName())
+                .brandId(doc.getBrandId())
+                .brandName(doc.getBrandName())
+                .name(doc.getName())
+                .slug(doc.getSlug())
+                .sku(doc.getSku())
+                .description(doc.getDescription())
+                .shortDescription(doc.getShortDescription())
+                .thumbnailUrl(doc.getThumbnailUrl())
+                .status(ProductStatus.valueOf(doc.getStatus()))
+                .createdAt(doc.getCreatedAt())
+                .updatedAt(doc.getUpdatedAt())
+                .variants(doc.getVariants() == null ? new ArrayList<>() : doc.getVariants().stream()
+                        .map(v -> ProductVariantResponse.builder()
+                                .id(v.getId())
+                                .productId(doc.getId() != null ? Long.valueOf(doc.getId()) : null)
+                                .sku(v.getSku())
+                                .name(v.getName())
+                                .price(v.getPrice())
+                                .compareAtPrice(v.getCompareAtPrice())
+                                .lowStockThreshold(v.getLowStockThreshold())
+                                .weightGrams(v.getWeightGrams())
+                                .lengthCm(v.getLengthCm())
+                                .widthCm(v.getWidthCm())
+                                .heightCm(v.getHeightCm())
+                                .status(VariantStatus.valueOf(v.getStatus()))
+                                .attributes(v.getAttributes() == null ? new ArrayList<>() : v.getAttributes().stream()
+                                        .map(a -> AttributeResponse.builder()
+                                                .attributeId(a.getAttributeId())
+                                                .attributeName(a.getAttributeName())
+                                                .valueId(a.getValueId())
+                                                .value(a.getValue())
+                                                .build())
+                                        .toList())
                                 .build())
                         .toList())
                 .build();

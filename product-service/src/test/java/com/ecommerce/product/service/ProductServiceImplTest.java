@@ -14,6 +14,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import com.ecommerce.product.document.ProductDocument;
+import org.springframework.data.jpa.domain.Specification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +42,8 @@ class ProductServiceImplTest {
     private AttributeRepository attributeRepository;
     @Mock
     private AttributeValueRepository attributeValueRepository;
+    @Mock
+    private org.springframework.data.elasticsearch.core.ElasticsearchOperations elasticsearchOperations;
 
     @InjectMocks
     private ProductServiceImpl productService;
@@ -67,18 +77,18 @@ class ProductServiceImplTest {
         Attribute capacityAttr = Attribute.builder().id(2L).name("Dung lượng").build();
         
         when(attributeRepository.findByName("Màu sắc")).thenReturn(Optional.empty());
-        when(attributeRepository.save(argThat(a -> a != null && "Màu sắc".equals(a.getName())))).thenReturn(colorAttr);
+        when(attributeRepository.saveAndFlush(argThat(a -> a != null && "Màu sắc".equals(a.getName())))).thenReturn(colorAttr);
         when(attributeRepository.findByName("Dung lượng")).thenReturn(Optional.empty());
-        when(attributeRepository.save(argThat(a -> a != null && "Dung lượng".equals(a.getName())))).thenReturn(capacityAttr);
+        when(attributeRepository.saveAndFlush(argThat(a -> a != null && "Dung lượng".equals(a.getName())))).thenReturn(capacityAttr);
 
         // Mock AttributeValue resolution
         AttributeValue blackVal = AttributeValue.builder().id(50L).attribute(colorAttr).value("Black").build();
         AttributeValue sizeVal = AttributeValue.builder().id(52L).attribute(capacityAttr).value("128GB").build();
         
         when(attributeValueRepository.findByAttributeNameAndValue("Màu sắc", "Black")).thenReturn(Optional.empty());
-        when(attributeValueRepository.save(argThat(av -> av != null && "Black".equals(av.getValue())))).thenReturn(blackVal);
+        when(attributeValueRepository.saveAndFlush(argThat(av -> av != null && "Black".equals(av.getValue())))).thenReturn(blackVal);
         when(attributeValueRepository.findByAttributeNameAndValue("Dung lượng", "128GB")).thenReturn(Optional.empty());
-        when(attributeValueRepository.save(argThat(av -> av != null && "128GB".equals(av.getValue())))).thenReturn(sizeVal);
+        when(attributeValueRepository.saveAndFlush(argThat(av -> av != null && "128GB".equals(av.getValue())))).thenReturn(sizeVal);
 
         // Mock Variant save
         ProductVariant variant = ProductVariant.builder()
@@ -174,5 +184,87 @@ class ProductServiceImplTest {
         assertThat(attrRes.getAttributeName()).isEqualTo("Màu sắc");
         assertThat(attrRes.getValueId()).isEqualTo(50L);
         assertThat(attrRes.getValue()).isEqualTo("Black");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchProducts_shouldUseElasticsearchWhenConnected() {
+        // Arrange
+        String keyword = "iphone";
+        Long categoryId = 10L;
+        BigDecimal minPrice = new BigDecimal("1000");
+        BigDecimal maxPrice = new BigDecimal("50000000");
+        Pageable pageable = PageRequest.of(0, 10);
+
+        ProductDocument doc = ProductDocument.builder()
+                .id("2001")
+                .name("iPhone 15 Pro")
+                .status("ACTIVE")
+                .categoryId(10L)
+                .categoryName("Thiết Bị Điện Tử")
+                .brandId(1L)
+                .brandName("Apple")
+                .variants(List.of())
+                .build();
+
+        SearchHits<ProductDocument> searchHits = mock(SearchHits.class);
+        SearchHit<ProductDocument> searchHit = mock(SearchHit.class);
+        lenient().when(searchHits.getSearchHits()).thenReturn(List.of(searchHit));
+        lenient().when(searchHit.getContent()).thenReturn(doc);
+        lenient().when(searchHits.getTotalHits()).thenReturn(1L);
+
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class))).thenReturn(searchHits);
+
+        // Act
+        Page<ProductResponse> result = productService.searchProducts(keyword, categoryId, minPrice, maxPrice, pageable);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("iPhone 15 Pro");
+        verify(elasticsearchOperations, times(1)).search(any(NativeQuery.class), eq(ProductDocument.class));
+        verifyNoInteractions(productRepository); // No DB calls
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchProducts_shouldFallbackToDatabaseWhenElasticsearchFails() {
+        // Arrange
+        String keyword = "iphone";
+        Long categoryId = 10L;
+        BigDecimal minPrice = new BigDecimal("1000");
+        BigDecimal maxPrice = new BigDecimal("50000000");
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Category category = Category.builder().id(10L).name("Thiết Bị Điện Tử").build();
+        Brand brand = Brand.builder().id(1L).name("Apple").build();
+        Product product = Product.builder()
+                .id(2001L)
+                .category(category)
+                .brand(brand)
+                .name("iPhone 15 Pro")
+                .slug("iphone-15-pro")
+                .sku("IP15P-BASE")
+                .status(ProductStatus.ACTIVE)
+                .variants(List.of())
+                .build();
+
+        Page<Product> dbPage = new org.springframework.data.domain.PageImpl<>(List.of(product), pageable, 1);
+
+        // Simulate ES exception
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
+                .thenThrow(new org.springframework.data.elasticsearch.NoSuchIndexException("index_not_found"));
+
+        when(productRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(dbPage);
+
+        // Act
+        Page<ProductResponse> result = productService.searchProducts(keyword, categoryId, minPrice, maxPrice, pageable);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("iPhone 15 Pro");
+        verify(elasticsearchOperations, times(1)).search(any(NativeQuery.class), eq(ProductDocument.class));
+        verify(productRepository, times(1)).findAll(any(Specification.class), eq(pageable));
     }
 }

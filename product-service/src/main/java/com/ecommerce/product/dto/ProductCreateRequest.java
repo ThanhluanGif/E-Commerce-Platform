@@ -1,6 +1,7 @@
 package com.ecommerce.product.dto;
 
 import com.ecommerce.product.entity.ProductStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class ProductCreateRequest {
     private ProductStatus status = ProductStatus.DRAFT;
 
     @NotEmpty(message = "Product must have at least one variant")
+    @Valid
     @Builder.Default
     private List<ProductVariantCreateRequest> variants = new ArrayList<>();
 }

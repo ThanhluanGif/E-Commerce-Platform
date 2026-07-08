@@ -41,6 +41,19 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully", products));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> searchProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ProductResponse> products = productService.searchProducts(
+                keyword, categoryId, minPrice, maxPrice, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success("Products searched successfully", products));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,

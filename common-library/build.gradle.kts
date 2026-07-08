@@ -18,4 +18,7 @@ dependencies {
 
     // Jackson serialization
     implementation("com.fasterxml.jackson.core:jackson-databind")
+
+    // Logging API
+    implementation("org.slf4j:slf4j-api:2.0.12")
 }

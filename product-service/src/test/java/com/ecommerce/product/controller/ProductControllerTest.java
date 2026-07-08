@@ -78,6 +78,7 @@ class ProductControllerTest {
         when(productService.createProduct(any(ProductCreateRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/products")
+                        .header("X-User-Roles", "ROLE_ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -112,5 +113,37 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.message").value("Product retrieved successfully"))
                 .andExpect(jsonPath("$.data.id").value(2001))
                 .andExpect(jsonPath("$.data.name").value("iPhone 15 Pro"));
+    }
+
+    @Test
+    void searchProducts_shouldReturnPageOfProducts() throws Exception {
+        ProductResponse response = ProductResponse.builder()
+                .id(2001L)
+                .categoryId(10L)
+                .categoryName("Thiết Bị Điện Tử")
+                .brandId(1L)
+                .brandName("Apple")
+                .name("iPhone 15 Pro")
+                .slug("iphone-15-pro")
+                .sku("IP15P-BASE")
+                .status(ProductStatus.ACTIVE)
+                .variants(List.of())
+                .build();
+
+        org.springframework.data.domain.Page<ProductResponse> page = new org.springframework.data.domain.PageImpl<>(List.of(response));
+
+        when(productService.searchProducts(any(), any(), any(), any(), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/products/search")
+                        .param("keyword", "iphone")
+                        .param("categoryId", "10")
+                        .param("minPrice", "1000")
+                        .param("maxPrice", "50000000")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Products searched successfully"))
+                .andExpect(jsonPath("$.data.content[0].id").value(2001))
+                .andExpect(jsonPath("$.data.content[0].name").value("iPhone 15 Pro"));
     }
 }

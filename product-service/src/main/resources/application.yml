@@ -1,11 +1,16 @@
 server:
   port: 8082
 
+logging:
+  level:
+    org.springframework.data.elasticsearch: DEBUG
+    org.springframework.data.elasticsearch.client.LOGGER: TRACE
+
 spring:
   application:
     name: product-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/ecommerce_product
+    url: jdbc:postgresql://localhost:5432/ecommerce_product?currentSchema=catalog,public
     username: postgres
     password: your_secure_password
     driver-class-name: org.postgresql.Driver
@@ -25,3 +30,5 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:redis_secure_pass}
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}

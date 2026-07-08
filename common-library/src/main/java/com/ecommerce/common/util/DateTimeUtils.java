@@ -25,16 +25,18 @@ public class DateTimeUtils {
 
     public static Instant parseToInstant(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isEmpty()) return null;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_PATTERN)
-                .withZone(DEFAULT_ZONE_ID);
-        return Instant.from(formatter.parse(dateTimeStr));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_PATTERN);
+        return LocalDateTime.parse(dateTimeStr, formatter).atZone(DEFAULT_ZONE_ID).toInstant();
     }
 
     public static Instant parseToInstant(String dateTimeStr, String pattern) {
         if (dateTimeStr == null || dateTimeStr.isEmpty() || pattern == null) return null;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern)
-                .withZone(DEFAULT_ZONE_ID);
-        return Instant.from(formatter.parse(dateTimeStr));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        try {
+            return LocalDateTime.parse(dateTimeStr, formatter).atZone(DEFAULT_ZONE_ID).toInstant();
+        } catch (Exception e) {
+            return java.time.ZonedDateTime.parse(dateTimeStr, formatter).toInstant();
+        }
     }
 
     public static LocalDateTime toLocalDateTime(Instant instant) {

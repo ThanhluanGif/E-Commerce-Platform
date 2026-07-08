@@ -42,18 +42,27 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
+        
+        // Clean headers to prevent client spoofing
+        ServerHttpRequest cleanedRequest = request.mutate()
+                .headers(httpHeaders -> {
+                    httpHeaders.keySet().removeIf(key -> key.toLowerCase().startsWith("x-user-"));
+                })
+                .build();
+        ServerWebExchange cleanedExchange = exchange.mutate().request(cleanedRequest).build();
+        
+        String path = cleanedRequest.getURI().getPath();
 
         // 1. Check if path is public
         if (isPublicPath(path)) {
-            return chain.filter(exchange);
+            return chain.filter(cleanedExchange);
         }
 
         // 2. Read Authorization header
-        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String authHeader = cleanedRequest.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("Missing or invalid Authorization header for path: {}", path);
-            return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
+            return onError(cleanedExchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
         }
 
         String token = authHeader.substring(7);
@@ -70,7 +79,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             Object userIdObj = claims.get("id");
             if (userIdObj == null) {
                 log.warn("JWT payload does not contain id claim for path: {}", path);
-                return onError(exchange, "Invalid token payload: missing id claim", HttpStatus.UNAUTHORIZED);
+                return onError(cleanedExchange, "Invalid token payload: missing id claim", HttpStatus.UNAUTHORIZED);
             }
             String userId = String.valueOf(userIdObj);
 
@@ -84,16 +93,16 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             }
 
             // 4. Inject X-User-Id and X-User-Roles into request headers
-            ServerHttpRequest mutatedRequest = request.mutate()
+            ServerHttpRequest mutatedRequest = cleanedRequest.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Roles", rolesStr)
                     .build();
 
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            return chain.filter(cleanedExchange.mutate().request(mutatedRequest).build());
 
         } catch (Exception e) {
             log.error("JWT verification failed for path: {}, error: {}", path, e.getMessage());
-            return onError(exchange, "JWT signature verification or expiration check failed: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
+            return onError(cleanedExchange, "JWT signature verification or expiration check failed: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.ecommerce.product.dto;
 
 import com.ecommerce.product.entity.VariantStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -43,5 +44,6 @@ public class ProductVariantCreateRequest {
     private VariantStatus status = VariantStatus.ACTIVE;
 
     @Builder.Default
+    @Valid
     private List<AttributeMappingRequest> attributes = new ArrayList<>();
 }
